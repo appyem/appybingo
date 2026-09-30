@@ -1,7 +1,46 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@domain/*": [
+        "src/domain/*"
+      ],
+      "@services/*": [
+        "src/services/*"
+      ],
+      "@repositories/*": [
+        "src/repositories/*"
+      ],
+      "@utils/*": [
+        "src/utils/*"
+      ],
+      "@bingo-types/*": [
+        "src/types/*"
+      ]
+    },
+    "ignoreDeprecations": "6.0"
+  },
+  "include": [
+    "src",
+    "vite-env.d.ts"
   ]
 }

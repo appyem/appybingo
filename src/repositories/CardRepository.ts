@@ -1,0 +1,2 @@
+import type { Card, CardId, GameId, PlayerId } from '@bingo-types/index';
+export interface CardRepository { getReservedFingerprints(gameId: GameId): Promise<Set<string>>; create(card: Card): Promise<void>; assign(cardId: CardId, playerId: PlayerId): Promise<void>; getNextCardNumber(gameId: GameId): Promise<number>; findById(cardId: CardId): Promise<Card | null>; }

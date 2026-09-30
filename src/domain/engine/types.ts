@@ -1,0 +1,5 @@
+import type { CardMatrix, GameId } from '@bingo-types/index';
+export interface DrawManager { start(gameId: GameId): Promise<void>; drawNext(gameId: GameId): Promise<number>; getCurrentBall(gameId: GameId): Promise<number | null>; getHistory(gameId: GameId): Promise<number[]>; hasRemaining(gameId: GameId): Promise<boolean>; }
+export interface CardManager { reserveCard(gameId: GameId, fingerprint: string): Promise<boolean>; isReserved(gameId: GameId, fingerprint: string): Promise<boolean>; assignCard(gameId: GameId, cardId: string, playerId: string): Promise<void>; }
+export interface WinnerValidator { validate(matrix: CardMatrix, history: number[]): Promise<{ pattern: string; winningBall: number } | null>; }
+export interface GameEngine { readonly draws: DrawManager; readonly cards: CardManager; readonly winners: WinnerValidator; }

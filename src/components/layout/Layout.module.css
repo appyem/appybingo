@@ -1,0 +1,137 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-base);
+}
+
+.main {
+  flex: 1;
+}
+
+.footer {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  padding: 3rem 0;
+  margin-top: 3rem;
+}
+
+.footerGrid {
+  display: grid;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 640px) {
+  .footerGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .footerGrid {
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+  }
+}
+
+.footerBrand {
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+  .footerBrand {
+    grid-column: span 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .footerBrand {
+    grid-column: span 1;
+  }
+}
+
+.footerLogo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.footerLogoIcon {
+  display: flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+}
+
+.footerLogoIcon svg {
+  height: 1.25rem;
+  width: 1.25rem;
+  color: white;
+  stroke-width: 2.5;
+}
+
+.footerLogoText {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.footerLogoTextPrimary {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+}
+
+.footerLogoTextSecondary {
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.footerDescription {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.625;
+}
+
+.footerColumn h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.footerLinks {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.footerLink {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  transition: color 0.2s;
+}
+
+.footerLink:hover {
+  color: white;
+}
+
+.footerBottom {
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.footerCopyright {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}

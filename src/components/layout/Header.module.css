@@ -1,0 +1,162 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(12px);
+}
+
+.headerInner {
+  display: flex;
+  height: 4rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: opacity 0.2s;
+}
+
+.logo:hover {
+  opacity: 0.8;
+}
+
+.logoIcon {
+  display: flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.logoIcon svg {
+  height: 1.25rem;
+  width: 1.25rem;
+  color: white;
+  stroke-width: 2.5;
+}
+
+.logoText {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.logoTextPrimary {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: white;
+}
+
+.logoTextSecondary {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.nav {
+  display: none;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+@media (min-width: 768px) {
+  .nav {
+    display: flex;
+  }
+}
+
+.navLink {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s;
+}
+
+.navLink:hover {
+  color: white;
+  background: var(--color-bg-surface);
+}
+
+.actions {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .actions {
+    display: flex;
+  }
+}
+
+.menuButton {
+  display: flex;
+  padding: 0.5rem;
+  color: var(--color-text-secondary);
+  transition: color 0.2s;
+}
+
+@media (min-width: 768px) {
+  .menuButton {
+    display: none;
+  }
+}
+
+.menuButton:hover {
+  color: white;
+}
+
+.mobileMenu {
+  display: none;
+  padding: 1rem 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.mobileMenuOpen {
+  display: block;
+}
+
+.mobileNav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mobileNavLink {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-lg);
+  transition: all 0.2s;
+}
+
+.mobileNavLink:hover {
+  color: white;
+  background: var(--color-bg-surface);
+}
+
+.mobileActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}

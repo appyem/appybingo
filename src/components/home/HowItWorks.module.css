@@ -1,0 +1,121 @@
+.section {
+  padding: 3rem 0;
+  background: var(--color-bg-elevated);
+}
+
+@media (min-width: 640px) {
+  .section {
+    padding: 4rem 0;
+  }
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .sectionTitle {
+    font-size: 1.875rem;
+  }
+}
+
+.sectionSubtitle {
+  color: var(--color-text-secondary);
+  max-width: 36rem;
+  margin: 0 auto;
+}
+
+.stepsGrid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .stepsGrid {
+    gap: 2rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .stepsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.step {
+  position: relative;
+}
+
+.stepGlow {
+  position: absolute;
+  inset: -0.125rem;
+  background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+  border-radius: var(--radius-2xl);
+  filter: blur(1rem);
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.step:hover .stepGlow {
+  opacity: 0.3;
+}
+
+.stepContent {
+  position: relative;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: 1.5rem;
+  height: 100%;
+  transition: border-color 0.2s;
+}
+
+.step:hover .stepContent {
+  border-color: var(--color-border-light);
+}
+
+.stepNumber {
+  font-size: 3rem;
+  font-weight: 900;
+  color: var(--color-border-light);
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.stepIcon {
+  display: inline-flex;
+  height: 3.5rem;
+  width: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.3);
+  margin-bottom: 1rem;
+}
+
+.stepIcon svg {
+  height: 1.75rem;
+  width: 1.75rem;
+  color: white;
+}
+
+.stepTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.stepDescription {
+  color: var(--color-text-secondary);
+  line-height: 1.625;
+}

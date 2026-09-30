@@ -1,0 +1,2 @@
+import type { Player, PlayerId, GameId } from '@bingo-types/index';
+export interface PlayerRepository { save(player: Player): Promise<void>; findById(id: PlayerId): Promise<Player | null>; findByGame(gameId: GameId): Promise<Player[]>; }
