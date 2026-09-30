@@ -16,8 +16,8 @@ export function Button({
   className = '', 
   ...props 
 }: ButtonProps) {
-  const variantClass = styles[variant];
-  const sizeClass = styles[size];
+  const variantClass = styles[variant] || styles.primary;
+  const sizeClass = styles[size] || styles.md;
 
   return (
     <button 

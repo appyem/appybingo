@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Función auxiliar para verificar si es admin
+    function isAdmin() {
+      return request.auth != null; // Simplificado para desarrollo. En producción validar role == 'ADMIN'
+    }
+
+    // PLAYERS: Público puede crear, admin puede leer/modificar
+    match /players/{playerId} {
+      allow create: if request.resource.data.keys().hasAll(['name', 'whatsapp', 'createdAt']);
+      allow read, update, delete: if isAdmin();
+    }
+
+    // REQUESTS: Público puede crear, admin puede leer/modificar
+    match /requests/{requestId} {
+      allow create: if request.resource.data.keys().hasAll(['playerId', 'playerName', 'whatsapp', 'requestedCards', 'createdAt']);
+      allow read, update, delete: if isAdmin();
+    }
+
+    // CARDS: Solo admin puede crear. Público puede leer si conoce el cardId (seguridad por oscuridad temporal)
+    match /cards/{cardId} {
+      allow create: if isAdmin();
+      allow read: if isAdmin() || request.auth != null; // Ajustar cuando haya auth de jugadores
+      allow update, delete: if isAdmin();
+    }
+
+    // GAMES: Solo admin
+    match /games/{gameId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

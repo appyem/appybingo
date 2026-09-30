@@ -20,22 +20,21 @@ export function Header() {
             </div>
           </a>
 
-          <nav className={styles.nav} aria-label="Navegación principal">
-            <a href="#inicio" className={styles.navLink}>Inicio</a>
-            <a href="#jugar" className={styles.navLink}>Jugar</a>
+          <nav className={styles.nav} aria-label="Navegacion principal">
+            <a href="/" className={styles.navLink}>Inicio</a>
             <a href="#partidas" className={styles.navLink}>Partidas</a>
             <a href="#mis-cartones" className={styles.navLink}>Mis Cartones</a>
           </nav>
 
           <div className={styles.actions}>
-            <Button variant="ghost" size="sm">Admin</Button>
-            <Button variant="primary" size="sm">Solicitar Cartón</Button>
+            <a href="#/admin/requests"><Button variant="ghost" size="sm">Admin</Button></a>
+            <a href="#solicitar"><Button variant="primary" size="sm">Solicitar Carton</Button></a>
           </div>
 
           <button 
             className={styles.menuButton}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Menú"
+            aria-label="Menu"
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -43,13 +42,14 @@ export function Header() {
 
         <div className={`${styles.mobileMenu} ${mobileMenuOpen ? styles.mobileMenuOpen : ''}`}>
           <nav className={styles.mobileNav}>
-            <a href="#inicio" className={styles.mobileNavLink}>Inicio</a>
-            <a href="#jugar" className={styles.mobileNavLink}>Jugar</a>
+            <a href="/" className={styles.mobileNavLink}>Inicio</a>
             <a href="#partidas" className={styles.mobileNavLink}>Partidas</a>
             <a href="#mis-cartones" className={styles.mobileNavLink}>Mis Cartones</a>
             <div className={styles.mobileActions}>
-              <Button variant="ghost" size="sm" style={{ width: '100%' }}>Admin</Button>
-              <Button variant="primary" size="sm" style={{ width: '100%' }}>Solicitar Cartón</Button>
+              <a href="#/admin/requests" style={{ width: '100%' }}><Button variant="ghost" size="sm" style={{ width: '100%' }}>Admin</Button></a>
+              <a href="#solicitar" style={{ width: '100%' }}>
+                <Button variant="primary" size="sm" style={{ width: '100%' }}>Solicitar Carton</Button>
+              </a>
             </div>
           </nav>
         </div>

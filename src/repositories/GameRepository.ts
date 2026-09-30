@@ -1,2 +1,9 @@
-import type { Game, GameId } from '@bingo-types/index';
-export interface GameRepository { findById(id: GameId): Promise<Game | null>; save(game: Game): Promise<void>; updateState(id: GameId, state: Game['state']): Promise<void>; }
+import type { Game, GameId, GameState } from '@bingo-types/index';
+
+export interface GameRepository {
+  getGames(): Promise<Game[]>;
+  getGameById(id: GameId): Promise<Game | null>;
+  createGame(data: Omit<Game, 'id' | 'createdAt' | 'updatedAt'>): Promise<Game>;
+  updateGameState(id: GameId, state: GameState): Promise<void>;
+  subscribeToGame(id: GameId, callback: (game: Game | null) => void): () => void;
+}

@@ -4,9 +4,9 @@ import type { GameRepository } from '@repositories/GameRepository';
 export class GameService {
   constructor(private readonly repo: GameRepository) {}
   async transition(gameId: GameId, to: GameState): Promise<void> {
-    const game = await this.repo.findById(gameId);
+    const game = await this.repo.getGameById(gameId);
     if (!game) throw new Error('Partida no encontrada');
     assertTransition(game.state, to);
-    await this.repo.updateState(gameId, to);
+    await this.repo.updateGameState(gameId, to);
   }
 }
