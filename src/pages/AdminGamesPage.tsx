@@ -143,7 +143,56 @@ export function AdminGamesPage() {
   };
 
   return (
-    <AdminLayout currentPath="/admin/games">
+    <>
+      
+      <style>{`
+        @media (max-width: 768px) {
+          .admin-table-container {
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            max-height: 65vh;
+            -webkit-overflow-scrolling: touch;
+          }
+          .admin-table, .admin-table tbody, .admin-table tr, .admin-table td {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .admin-table thead {
+            display: none;
+          }
+          .admin-table tr {
+            margin-bottom: 0.75rem;
+            background: var(--color-bg-elevated);
+            border-radius: var(--radius-md);
+            padding: 0.75rem;
+            border: 1px solid var(--color-border);
+          }
+          .admin-table td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 0.875rem;
+          }
+          .admin-table td:last-child {
+            border-bottom: none;
+            justify-content: flex-end;
+            margin-top: 0.25rem;
+          }
+          .admin-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: var(--color-text-muted);
+            flex-shrink: 0;
+            margin-right: 1rem;
+            text-align: left;
+          }
+        }
+      `}</style>
+
+      <AdminLayout currentPath="/admin/games">
       <div style={{ padding: '2rem' }}>
         <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: 'white', marginBottom: '2rem' }}>Gestión de Juegos</h1>
         
@@ -173,8 +222,8 @@ export function AdminGamesPage() {
               </Button>
             </form>
 
-            <div style={{ overflowX: 'auto', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
+            <div className="admin-table-container" style={{ overflowX: 'auto', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)' }}>
+              <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
                 <thead>
                   <tr style={{ background: 'var(--color-bg-elevated)' }}>
                     <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Nombre</th>
@@ -191,8 +240,8 @@ export function AdminGamesPage() {
                     const availableStates = getAvailableStates(g.state);
                     return (
                       <tr key={g.id} style={{ borderTop: '1px solid var(--color-border)' }}>
-                        <td style={{ padding: '1rem', color: 'white', fontWeight: 600 }}>{g.name}</td>
-                        <td style={{ padding: '1rem', color: 'var(--color-text-secondary)' }}>{g.variant}</td>
+                        <td data-label="Nombre" style={{ padding: '1rem', color: 'white', fontWeight: 600 }}>{g.name}</td>
+                        <td data-label="Variante" style={{ padding: '1rem', color: 'var(--color-text-secondary)' }}>{g.variant}</td>
                         <td style={{ padding: '1rem' }}>
                           <span style={{
                             padding: '0.25rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600,
@@ -292,5 +341,6 @@ export function AdminGamesPage() {
         )}
       </div>
     </AdminLayout>
+    </>
   );
 }

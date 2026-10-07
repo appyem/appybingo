@@ -60,9 +60,10 @@ export function AdminCardsPage() {
       <style>{`
         @media (max-width: 768px) {
           .admin-table-container {
-            overflow-x: visible !important;
-            background: transparent !important;
-            border: none !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            max-height: 65vh;
+            -webkit-overflow-scrolling: touch;
           }
           .admin-table, .admin-table tbody, .admin-table tr, .admin-table td {
             display: block;
@@ -73,33 +74,32 @@ export function AdminCardsPage() {
             display: none;
           }
           .admin-table tr {
-            margin-bottom: 1rem;
-            background: var(--color-bg-surface);
-            border-radius: var(--radius-lg);
-            padding: 1rem;
+            margin-bottom: 0.75rem;
+            background: var(--color-bg-elevated);
+            border-radius: var(--radius-md);
+            padding: 0.75rem;
             border: 1px solid var(--color-border);
           }
           .admin-table td {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 0;
+            padding: 0.5rem 0;
             border-bottom: 1px solid var(--color-border);
-            text-align: right;
+            font-size: 0.875rem;
           }
           .admin-table td:last-child {
             border-bottom: none;
             justify-content: flex-end;
-            margin-top: 0.5rem;
+            margin-top: 0.25rem;
           }
           .admin-table td::before {
             content: attr(data-label);
             font-weight: 600;
             color: var(--color-text-muted);
-            font-size: 0.875rem;
-            text-align: left;
             flex-shrink: 0;
             margin-right: 1rem;
+            text-align: left;
           }
         }
       `}</style>

@@ -49,7 +49,56 @@ export function AdminWinnersPage() {
   };
 
   return (
-    <AdminLayout currentPath="/admin/winners">
+    <>
+      
+      <style>{`
+        @media (max-width: 768px) {
+          .admin-table-container {
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            max-height: 65vh;
+            -webkit-overflow-scrolling: touch;
+          }
+          .admin-table, .admin-table tbody, .admin-table tr, .admin-table td {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .admin-table thead {
+            display: none;
+          }
+          .admin-table tr {
+            margin-bottom: 0.75rem;
+            background: var(--color-bg-elevated);
+            border-radius: var(--radius-md);
+            padding: 0.75rem;
+            border: 1px solid var(--color-border);
+          }
+          .admin-table td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 0.875rem;
+          }
+          .admin-table td:last-child {
+            border-bottom: none;
+            justify-content: flex-end;
+            margin-top: 0.25rem;
+          }
+          .admin-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: var(--color-text-muted);
+            flex-shrink: 0;
+            margin-right: 1rem;
+            text-align: left;
+          }
+        }
+      `}</style>
+
+      <AdminLayout currentPath="/admin/winners">
       <div style={{ padding: '2rem' }}>
         <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: 'white', marginBottom: '2rem' }}>🏆 Ganadores Registrados</h1>
         
@@ -60,8 +109,8 @@ export function AdminWinnersPage() {
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.125rem' }}>Aún no hay ganadores registrados. ¡El próximo puede ser ahora!</p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+          <div className="admin-table-container" style={{ overflowX: 'auto', background: 'var(--color-bg-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)' }}>
+            <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
               <thead>
                 <tr style={{ background: 'var(--color-bg-elevated)' }}>
                   <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Jugador</th>
@@ -74,11 +123,11 @@ export function AdminWinnersPage() {
               <tbody>
                 {winners.map((winner, idx) => (
                   <tr key={winner.card.id} style={{ borderTop: '1px solid var(--color-border)' }}>
-                    <td style={{ padding: '1rem', color: 'white', fontWeight: 600 }}>
+                    <td data-label="Jugador" style={{ padding: '1rem', color: 'white', fontWeight: 600 }}>
                       {winner.request?.playerName || 'Desconocido'}
                       <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Solicitud: {winner.card.requestId}</div>
                     </td>
-                    <td style={{ padding: '1rem', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>
+                    <td data-label="WhatsApp" style={{ padding: '1rem', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>
                       {winner.request?.whatsapp || 'N/A'}
                     </td>
                     <td style={{ padding: '1rem', color: 'var(--color-primary)', fontWeight: 700, fontFamily: 'monospace' }}>
@@ -124,5 +173,6 @@ export function AdminWinnersPage() {
         )}
       </div>
     </AdminLayout>
+    </>
   );
 }
