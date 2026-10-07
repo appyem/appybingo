@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { cardRepository, gameRepository } from '../repositories';
+import { cardRepository, gameRepository, requestRepository } from '../repositories';
 import { getBingoLetter, speakBingoNumber } from '../utils/bingo';
 import type { Card, Game } from '@bingo-types/index';
 
@@ -68,6 +68,8 @@ export function CardViewPage() {
   const [invalidMark, setInvalidMark] = useState<number | null>(null); // Para feedback de error
   
   const [isBingo, setIsBingo] = useState(false);
+  const [gameHasWinner, setGameHasWinner] = useState(false);
+  const [winnerName, setWinnerName] = useState<string | null>(null);
   const [showBingoButton, setShowBingoButton] = useState(false);
   const [bingoCountdown, setBingoCountdown] = useState(7);
   
@@ -99,6 +101,21 @@ export function CardViewPage() {
       winAudio.play().catch(e => console.log('Reproducción de audio requiere interacción previa:', e));
     }
   }, [isBingo]);
+  // Detectar si ya hay un ganador en este juego
+  useEffect(() => {
+    if (game?.id && !isBingo) {
+      cardRepository.getCards().then(cards => {
+        const winningCard = cards.find(c => c.gameId === game.id && c.status === 'WINNER');
+        if (winningCard) {
+          setGameHasWinner(true);
+          requestRepository.getRequestById(winningCard.requestId).then(req => {
+            if (req) setWinnerName(req.playerName);
+          });
+        }
+      });
+    }
+  }, [game?.id, game?.currentBall, isBingo]);
+
 
   const getDeviceId = () => {
     let deviceId = localStorage.getItem('appybingo_device_id');
@@ -651,6 +668,56 @@ export function CardViewPage() {
           ? '¡Atento! Toca los números en tu cartón. Si no lo haces en 6 segundos, se marcarán solos.' 
           : 'El sorteo comenzará pronto. Mantén esta pantalla abierta.'}
       </div>
+
+      
+      {/* PANTALLA DE "YA HUBO UN GANADOR" PARA CARTONES PERDEDORES */}
+      {gameHasWinner && !isBingo && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.95)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 400,
+          animation: 'fadeIn 0.5s ease-out',
+          padding: '2rem',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '5rem', marginBottom: '1rem', animation: 'bingo-bounce 0.6s infinite' }}>🎉</div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#FCBF49', marginBottom: '1rem', textShadow: '0 4px 8px rgba(0,0,0,0.5)' }}>
+            ¡Ya hubo un ganador!
+          </h1>
+          {winnerName && (
+            <p style={{ fontSize: '1.25rem', color: 'white', marginBottom: '2rem', fontWeight: 600 }}>
+              Felicidades a <strong style={{ color: '#FCBF49' }}>{winnerName}</strong> por llevarse el premio.
+            </p>
+          )}
+          <p style={{ fontSize: '1.5rem', color: '#d4d4e8', fontWeight: 700, marginBottom: '2rem' }}>
+            ¡Suerte para la próxima! 🍀
+          </p>
+          <button 
+            onClick={() => window.location.hash = '#/'}
+            style={{
+              padding: '1rem 2.5rem',
+              background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
+              color: '#0A1628',
+              border: 'none',
+              borderRadius: '9999px',
+              fontSize: '1.125rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: '0 10px 30px rgba(252,191,73,0.4)',
+              transition: 'transform 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            Volver al Inicio
+          </button>
+        </div>
+      )}
 
       {showBallPopup && currentBall && (
         <div style={{

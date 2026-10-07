@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { gameRepository, cardRepository } from '../repositories';
+import { gameRepository, cardRepository, requestRepository } from '../repositories';
 import { getBingoLetter, speakBingoNumber } from '../utils/bingo';
 import type { Game, Card } from '@bingo-types/index';
 
@@ -10,6 +10,7 @@ export function GameRoomPage() {
   const [loading, setLoading] = useState<boolean>(!!initialGameId);
   const [error, setError] = useState<string | null>(initialGameId ? null : 'ID de juego no válido');
   const [playerCards, setPlayerCards] = useState<Card[]>([]);
+  const [winner, setWinner] = useState<{ playerName: string; cardNumber: string } | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const prevBallRef = useRef<number | null>(null);
   const soundEnabledRef = useRef(soundEnabled);
@@ -56,6 +57,25 @@ export function GameRoomPage() {
       prevBallRef.current = game.currentBall;
     }
   }, [game?.currentBall]);
+
+  // Detectar si hay un ganador en este juego para mostrarlo en la sala
+  useEffect(() => {
+    if (game?.id) {
+      const checkWinner = async () => {
+        const cards = await cardRepository.getCards();
+        const winningCard = cards.find(c => c.gameId === game.id && c.status === 'WINNER');
+        if (winningCard) {
+          const req = await requestRepository.getRequestById(winningCard.requestId);
+          if (req) {
+            setWinner({ playerName: req.playerName, cardNumber: winningCard.cardNumberFormatted });
+          }
+        } else {
+          setWinner(null);
+        }
+      };
+      checkWinner();
+    }
+  }, [game?.id, game?.currentBall]);
 
   if (loading) {
     return (
@@ -396,6 +416,74 @@ export function GameRoomPage() {
           </div>
         )}
       </div>
+
+      {/* PANTALLA DE GANADOR EN LA SALA DE JUEGO */}
+      {winner && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 50%, #E63946 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 300,
+          animation: 'fadeIn 0.5s ease-out',
+          overflow: 'hidden',
+          padding: '2rem',
+          textAlign: 'center'
+        }}>
+          <img 
+            src="/logo.png" 
+            alt="AppyBingo" 
+            style={{ 
+              position: 'absolute',
+              width: '80%',
+              maxWidth: '500px',
+              opacity: 0.15,
+              transform: 'rotate(-15deg)',
+              pointerEvents: 'none'
+            }} 
+          />
+          <div style={{ fontSize: '6rem', marginBottom: '1rem', animation: 'bingo-bounce 0.6s infinite', zIndex: 1 }}>🏆</div>
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: 900,
+            color: 'white',
+            textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+            marginBottom: '0.5rem',
+            zIndex: 1
+          }}>
+            ¡TENEMOS UN GANADOR!
+          </h1>
+          <p style={{ fontSize: '1.5rem', color: 'white', zIndex: 1, fontWeight: 600, marginBottom: '1rem' }}>
+            ¡Felicidades <strong style={{ fontSize: '1.75rem', color: '#0A1628' }}>{winner.playerName}</strong>!
+          </p>
+          <div style={{
+            padding: '1rem 2rem',
+            background: 'rgba(255,255,255,0.2)',
+            borderRadius: 'var(--radius-xl)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1,
+            textAlign: 'center',
+            marginBottom: '2rem',
+            border: '2px solid rgba(255,255,255,0.3)'
+          }}>
+            <div style={{ fontSize: '0.875rem', color: 'white', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>Cartón Ganador</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#0A1628', fontFamily: 'monospace' }}>
+              {winner.cardNumber}
+            </div>
+          </div>
+          <p style={{ fontSize: '1.125rem', color: 'white', zIndex: 1, opacity: 0.9, maxWidth: '400px' }}>
+            El administrador validará la victoria y se pondrá en contacto para la entrega del premio.
+          </p>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes bingo-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+      `}</style>
     </div>
   );
 }
