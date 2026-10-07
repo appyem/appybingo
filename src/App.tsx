@@ -11,6 +11,7 @@ import { CardViewPage } from './pages/CardViewPage';
 import { AdminCardsPage } from './pages/AdminCardsPage';
 import { AdminGamesPage } from './pages/AdminGamesPage';
 import { AdminLoginPage } from './pages/AdminLoginPage';
+import { AdminWinnersPage } from './pages/AdminWinnersPage';
 import { GameRoomPage } from './pages/GameRoomPage';
 
 function AppContent() {
@@ -35,7 +36,7 @@ function AppContent() {
   const hash = currentHash;
 
   // Rutas públicas
-  if (hash === '#solicitar') return <Layout><RequestPage /></Layout>;
+  if (hash === '#solicitar' || hash.startsWith('#/solicitar/')) return <Layout><RequestPage /></Layout>;
   if (hash === '#mis-cartones') return <Layout><MyCardsPage /></Layout>;
   if (hash.startsWith('#/carton/')) return <Layout><CardViewPage /></Layout>;
   if (hash.startsWith('#/game/')) return <Layout><GameRoomPage /></Layout>;
@@ -52,6 +53,9 @@ function AppContent() {
     }
     if (hash === '#/admin/cards' || hash.startsWith('#/admin/cards/')) {
       return <AdminCardsPage />;
+    }
+    if (hash === '#/admin/winners') {
+      return <AdminWinnersPage />;
     }
     
     // Ruta por defecto del admin

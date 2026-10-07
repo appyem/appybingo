@@ -31,6 +31,42 @@ export class MockGameRepository implements GameRepository {
     callback(game ? { ...game } : null);
     return () => {};
   }
+
+  async drawNextNumber(id: GameId): Promise<number | null> {
+    const index = this.games.findIndex(g => g.id === id);
+    if (index === -1) throw new Error('Juego no encontrado');
+    
+    const game = this.games[index];
+    if (game.state !== 'RUNNING') throw new Error('El juego debe estar en estado RUNNING');
+    
+    const drawn = game.drawnNumbers || [];
+    if (drawn.length >= 75) throw new Error('Ya se han sorteado los 75 números');
+    
+    let newNumber: number;
+    do {
+      newNumber = Math.floor(Math.random() * 75) + 1;
+    } while (drawn.includes(newNumber));
+    
+    const newDrawn = [...drawn, newNumber];
+    this.games[index] = {
+      ...game,
+      currentBall: newNumber,
+      drawnNumbers: newDrawn,
+      updatedAt: Date.now()
+    };
+    
+    return newNumber;
+  }
+
+  async deleteGame(id: GameId): Promise<void> {
+    const index = this.games.findIndex(g => g.id === id);
+    if (index !== -1) this.games.splice(index, 1);
+  }
+
+  subscribeToGames(callback: (games: Game[]) => void): () => void {
+    callback([...this.games]);
+    return () => {};
+  }
 }
 
 export const mockGameRepository = new MockGameRepository();

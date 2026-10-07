@@ -1,34 +1,154 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Función auxiliar para verificar si es admin
+    // ========================================
+    // FUNCIÓN AUXILIAR: Verificar si es admin
+    // ========================================
+    // NOTA: Actualmente usamos request.auth != null como proxy de administrador.
+    // Esto NO constituye un sistema real de roles.
+    // LIMITACIÓN CONOCIDA: Cualquier usuario autenticado en Firebase Auth
+    // tendrá acceso administrativo. Se recomienda implementar Custom Claims
+    // o una colección 'users' con campo 'role' en una fase posterior.
     function isAdmin() {
-      return request.auth != null; // Simplificado para desarrollo. En producción validar role == 'ADMIN'
+      return request.auth != null;
     }
-
-    // PLAYERS: Público puede crear, admin puede leer/modificar
-    match /players/{playerId} {
-      allow create: if request.resource.data.keys().hasAll(['name', 'whatsapp', 'createdAt']);
-      allow read, update, delete: if isAdmin();
-    }
-
-    // REQUESTS: Público puede crear, admin puede leer/modificar
+    
+    // ========================================
+    // COLECCIÓN: requests
+    // ========================================
     match /requests/{requestId} {
-      allow create: if request.resource.data.keys().hasAll(['playerId', 'playerName', 'whatsapp', 'requestedCards', 'createdAt']);
-      allow read, update, delete: if isAdmin();
+      
+      // LECTURA: Solo administradores autenticados
+      allow read: if isAdmin();
+      
+      // CREACIÓN: Público puede crear, pero con restricciones estrictas
+      allow create: if isValidNewRequest();
+      
+      // ACTUALIZACIÓN: Solo administradores autenticados
+      allow update: if isAdmin();
+      
+      // ELIMINACIÓN: Solo administradores autenticados
+      allow delete: if isAdmin();
     }
-
-    // CARDS: Solo admin puede crear. Público puede leer si conoce el cardId (seguridad por oscuridad temporal)
+    
+    // Función para validar una nueva solicitud pública
+    function isValidNewRequest() {
+      let data = request.resource.data;
+      return 
+        // Solo puede crear con status PENDIENTE
+        data.status == 'PENDIENTE' &&
+        // Campos obligatorios deben existir
+        data.playerId is string &&
+        data.playerName is string &&
+        data.whatsapp is string &&
+        data.requestedCards is number &&
+        data.createdAt is number &&
+        // El cliente NO puede inyectar campos administrativos
+        !(data.keys().hasAny(['gameId', 'approvedAt', 'rejectedAt', 'rejectionReason'])) &&
+        // requestedCards debe estar en un rango razonable
+        data.requestedCards > 0 && data.requestedCards <= 10;
+    }
+    
+    // ========================================
+    // COLECCIÓN: cards
+    // ========================================
     match /cards/{cardId} {
+      
+      // LECTURA: Público puede leer (necesario para CardViewPage y GameRoomPage)
+      // NOTA DE PRIVACIDAD: El acceso público al documento completo de cards
+      // implica exposición de los campos personales almacenados allí (playerName, whatsapp).
+      // Esto quedará como mejora de arquitectura posterior.
+      allow read: if true;
+      
+      // CREACIÓN: Solo administradores autenticados (CardAssignmentService)
       allow create: if isAdmin();
-      allow read: if isAdmin() || request.auth != null; // Ajustar cuando haya auth de jugadores
-      allow update, delete: if isAdmin();
+      
+      // ACTUALIZACIÓN: 
+      // - Admin puede actualizar cualquier campo
+      // - Público puede actualizar SOLO openedDeviceId y openedAt, y solo la primera vez
+      allow update: if isAdmin() || isDeviceLockUpdate();
+      
+      // ELIMINACIÓN: Solo administradores autenticados
+      allow delete: if isAdmin();
     }
-
-    // GAMES: Solo admin
+    
+    // Función para validar la actualización del device lock
+    function isDeviceLockUpdate() {
+      let newData = request.resource.data;
+      let oldData = resource.data;
+      return 
+        // El documento actual NO debe tener openedDeviceId establecido
+        oldData.openedDeviceId == null &&
+        // Solo se permiten cambios en openedDeviceId y openedAt
+        newData.keys().hasOnly(['id', 'gameId', 'playerId', 'requestId', 'cardNumberFormatted', 'fingerprint', 'matrix', 'status', 'createdAt', 'assignedAt', 'url', 'openedDeviceId', 'openedAt']) &&
+        // openedDeviceId debe ser un string no vacío
+        newData.openedDeviceId is string && newData.openedDeviceId.size() > 0 &&
+        // openedAt debe ser un número (timestamp)
+        newData.openedAt is number &&
+        // Ningún otro campo puede cambiar
+        newData.gameId == oldData.gameId &&
+        newData.playerId == oldData.playerId &&
+        newData.requestId == oldData.requestId &&
+        newData.cardNumberFormatted == oldData.cardNumberFormatted &&
+        newData.fingerprint == oldData.fingerprint &&
+        newData.status == oldData.status &&
+        newData.createdAt == oldData.createdAt &&
+        newData.assignedAt == oldData.assignedAt &&
+        newData.url == oldData.url;
+    }
+    
+    // ========================================
+    // COLECCIÓN: games
+    // ========================================
     match /games/{gameId} {
-      allow read, write: if isAdmin();
+      
+      // LECTURA: Público puede leer (necesario para GameRoomPage y onSnapshot)
+      allow read: if true;
+      
+      // CREACIÓN: Solo administradores autenticados
+      allow create: if isAdmin() && isValidNewGame();
+      
+      // ACTUALIZACIÓN: Solo administradores autenticados
+      allow update: if isAdmin();
+      
+      // ELIMINACIÓN: Solo administradores autenticados
+      allow delete: if isAdmin();
     }
+    
+    // Función para validar un nuevo juego
+    function isValidNewGame() {
+      let data = request.resource.data;
+      return 
+        // Campos obligatorios
+        data.name is string &&
+        data.variant is string &&
+        data.state is string &&
+        data.createdAt is number &&
+        data.updatedAt is number &&
+        data.createdBy is string &&
+        // El estado inicial debe ser DRAFT
+        data.state == 'DRAFT';
+    }
+    
+    // ========================================
+    // COLECCIÓN: players
+    // ========================================
+    // Actualmente NO se utiliza como colección independiente.
+    // Mantenemos la colección cerrada por seguridad.
+    match /players/{playerId} {
+      allow read, write: if false;
+    }
+    
+    // ========================================
+    // COLECCIÓN: users
+    // ========================================
+    // Actualmente NO se utiliza.
+    // Mantenemos la colección cerrada por seguridad.
+    match /users/{userId} {
+      allow read, write: if false;
+    }
+    
   }
 }

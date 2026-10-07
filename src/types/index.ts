@@ -23,6 +23,10 @@ export type RequestStatus = 'PENDIENTE' | 'EN_REVISION' | 'APROBADA' | 'RECHAZAD
 export interface Game {
   id: GameId; name: string; variant: BingoVariant; state: GameState;
   createdAt: number; updatedAt: number; createdBy: string;
+  pricePerCard: number;
+  prizeValue: number;
+  currentBall?: number | null;
+  drawnNumbers?: number[];
 }
 
 export interface Player {
@@ -32,7 +36,7 @@ export interface Player {
 
 export interface CardRequest {
   id: RequestId; playerId: PlayerId; playerName: string; whatsapp: string;
-  requestedCards: number; status: RequestStatus; gameId?: GameId;
+  requestedCards: number; status?: RequestStatus; gameId?: GameId;
   rejectionReason?: string; createdAt: number; approvedAt?: number; rejectedAt?: number;
 }
 
@@ -42,6 +46,9 @@ export interface Card {
   status: CardStatus; createdAt: number; assignedAt: number; url: string;
   openedDeviceId?: string;
   openedAt?: number;
+  markedNumbers?: number[];
+  bingoClaimedAt?: number;
+  bingoClaimedBy?: string;
 }
 
 export interface Draw {

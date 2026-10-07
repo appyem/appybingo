@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AdminLayout } from '../components/admin/AdminLayout';
 import { Button } from '../components/ui/Button';
 import { cardRepository } from '../repositories';
+import { Trash2, ExternalLink } from 'lucide-react';
 import type { Card } from '@bingo-types/index';
 
 export function AdminCardsPage() {
@@ -9,24 +10,43 @@ export function AdminCardsPage() {
   const [search, setSearch] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingCard, setDeletingCard] = useState<string | null>(null);
+
+  const loadCards = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await cardRepository.getCards();
+      setCards(data);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Desconocido';
+      console.error('Error cargando cartones:', err);
+      setError('No se pudieron cargar los cartones. Detalle: ' + message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadCards = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const data = await cardRepository.getCards();
-        setCards(data);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Desconocido';
-        console.error('Error cargando cartones:', err);
-        setError('No se pudieron cargar los cartones. Verifica los índices de Firestore. Detalle: ' + message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadCards();
   }, []);
+
+  const handleDeleteCard = async (cardId: string) => {
+    if (!confirm('¿Estás seguro de eliminar este cartón? Esta acción no se puede deshacer.')) return;
+    
+    setDeletingCard(cardId);
+    try {
+      await cardRepository.deleteCard(cardId);
+      // Recargar la lista después de eliminar
+      await loadCards();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Desconocido';
+      alert('Error al eliminar el cartón: ' + message);
+    } finally {
+      setDeletingCard(null);
+    }
+  };
 
   const filtered = cards.filter(c => 
     !search || 
@@ -56,13 +76,13 @@ export function AdminCardsPage() {
             />
             
             <div style={{overflowX:'auto', background:'var(--color-bg-surface)', border:'1px solid var(--color-border)', borderRadius:'var(--radius-xl)'}}>
-              <table style={{width:'100%', borderCollapse:'collapse', minWidth:'600px'}}>
+              <table style={{width:'100%', borderCollapse:'collapse', minWidth:'700px'}}>
                 <thead>
                   <tr style={{background:'var(--color-bg-elevated)'}}>
                     <th style={{padding:'1rem', textAlign:'left', color:'var(--color-text-secondary)', fontSize:'0.75rem', textTransform:'uppercase', fontWeight:600}}>Número</th>
                     <th style={{padding:'1rem', textAlign:'left', color:'var(--color-text-secondary)', fontSize:'0.75rem', textTransform:'uppercase', fontWeight:600}}>Solicitud</th>
                     <th style={{padding:'1rem', textAlign:'left', color:'var(--color-text-secondary)', fontSize:'0.75rem', textTransform:'uppercase', fontWeight:600}}>Estado</th>
-                    <th style={{padding:'1rem', textAlign:'left', color:'var(--color-text-secondary)', fontSize:'0.75rem', textTransform:'uppercase', fontWeight:600}}>Acción</th>
+                    <th style={{padding:'1rem', textAlign:'left', color:'var(--color-text-secondary)', fontSize:'0.75rem', textTransform:'uppercase', fontWeight:600}}>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -76,7 +96,34 @@ export function AdminCardsPage() {
                         </span>
                       </td>
                       <td style={{padding:'1rem'}}>
-                        <Button variant="ghost" size="sm" onClick={() => window.location.hash = '#/carton/' + c.id}>Ver</Button>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <Button variant="ghost" size="sm" onClick={() => window.location.hash = '#/carton/' + c.id}>
+                            <ExternalLink size={14} style={{ marginRight: '0.25rem' }} />
+                            Ver
+                          </Button>
+                          <button
+                            onClick={() => handleDeleteCard(c.id)}
+                            disabled={deletingCard === c.id}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--color-error)',
+                              cursor: 'pointer',
+                              padding: '0.5rem',
+                              borderRadius: 'var(--radius-md)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              opacity: deletingCard === c.id ? 0.5 : 1,
+                              fontSize: '0.875rem',
+                              fontWeight: 600
+                            }}
+                            title="Eliminar cartón"
+                          >
+                            <Trash2 size={14} style={{ marginRight: '0.25rem' }} />
+                            {deletingCard === c.id ? '...' : 'Eliminar'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

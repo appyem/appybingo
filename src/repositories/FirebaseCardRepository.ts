@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, writeBatch, query, where, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, writeBatch, query, where, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { Card, CardId, GameId, RequestId, CardMatrix, CardCell } from '@bingo-types/index';
 import type { CardRepository } from './CardRepository';
@@ -106,6 +106,27 @@ export class FirebaseCardRepository implements CardRepository {
     await updateDoc(ref, {
       openedDeviceId: deviceId,
       openedAt: Date.now()
+    });
+  }
+
+  async deleteCard(cardId: CardId): Promise<void> {
+    const ref = doc(db, 'cards', cardId);
+    await deleteDoc(ref);
+  }
+
+  async markNumber(cardId: CardId, number: number): Promise<void> {
+    const ref = doc(db, 'cards', cardId);
+    await updateDoc(ref, {
+      markedNumbers: arrayUnion(number)
+    });
+  }
+
+  async claimBingo(cardId: CardId): Promise<void> {
+    const ref = doc(db, 'cards', cardId);
+    await updateDoc(ref, {
+      bingoClaimedAt: Date.now(),
+      bingoClaimedBy: 'device',
+      status: 'WINNER'
     });
   }
 }

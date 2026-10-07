@@ -36,7 +36,7 @@ export function countRequestsByStatus(requests: CardRequest[]): Record<RequestSt
   };
 
   requests.forEach(r => {
-    counts[r.status]++;
+    counts[r.status || 'PENDIENTE']++;
   });
 
   return counts;

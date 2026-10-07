@@ -14,7 +14,7 @@ export function RequestCard({ request, onView }: RequestCardProps) {
     <div className={styles.card}>
       <div className={styles.header}>
         <div className={styles.requestId}>{request.id}</div>
-        <StatusBadge status={request.status} />
+        <StatusBadge status={request.status || 'PENDIENTE'} />
       </div>
       
       <div className={styles.playerName}>{request.playerName}</div>

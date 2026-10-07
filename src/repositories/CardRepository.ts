@@ -10,4 +10,7 @@ export interface CardRepository {
   existsFingerprint(gameId: GameId, fingerprint: string): Promise<boolean>;
   existsVisibleNumber(gameId: GameId, visibleNumber: string): Promise<boolean>;
   updateCardOpenStatus(cardId: CardId, deviceId: string): Promise<void>;
+  deleteCard(cardId: CardId): Promise<void>;
+  markNumber(cardId: CardId, number: number): Promise<void>;
+  claimBingo(cardId: CardId): Promise<void>;
 }

@@ -52,6 +52,37 @@ export class MockCardRepository implements CardRepository {
       openedAt: Date.now()
     };
   }
+
+  async deleteCard(cardId: CardId): Promise<void> {
+    const index = this.cards.findIndex(c => c.id === cardId);
+    if (index !== -1) this.cards.splice(index, 1);
+  }
+
+  async markNumber(cardId: CardId, number: number): Promise<void> {
+    const index = this.cards.findIndex(c => c.id === cardId);
+    if (index !== -1) {
+      const current = this.cards[index];
+      const marked = current.markedNumbers || [];
+      if (!marked.includes(number)) {
+        this.cards[index] = {
+          ...current,
+          markedNumbers: [...marked, number]
+        };
+      }
+    }
+  }
+
+  async claimBingo(cardId: CardId): Promise<void> {
+    const index = this.cards.findIndex(c => c.id === cardId);
+    if (index !== -1) {
+      this.cards[index] = {
+        ...this.cards[index],
+        bingoClaimedAt: Date.now(),
+        bingoClaimedBy: 'device',
+        status: 'WINNER'
+      };
+    }
+  }
 }
 
 export const cardRepository = new MockCardRepository();

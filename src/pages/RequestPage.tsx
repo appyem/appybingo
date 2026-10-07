@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { QuantitySelector } from '../components/ui/QuantitySelector';
@@ -10,13 +10,18 @@ import {
   buildWhatsAppRequestMessage,
   buildWhatsAppDeepLink
 } from '../utils/requests';
-import { requestRepository } from '../repositories';
+import { requestRepository, gameRepository } from '../repositories';
 import { createUUID } from '@utils/ids';
+import type { Game } from '@bingo-types/index';
 import styles from './RequestPage.module.css';
 
 type Step = 'FORM' | 'SUMMARY' | 'SUCCESS';
 
 export function RequestPage() {
+  const hash = window.location.hash;
+  const initialGameId = hash.startsWith('#/solicitar/') ? hash.replace('#/solicitar/', '').trim() : null;
+  
+  const [game, setGame] = useState<Game | null>(null);
   const [step, setStep] = useState<Step>('FORM');
   const [name, setName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
@@ -24,6 +29,12 @@ export function RequestPage() {
   const [nameError, setNameError] = useState('');
   const [whatsappError, setWhatsappError] = useState('');
   const [requestId, setRequestId] = useState('');
+
+  useEffect(() => {
+    if (initialGameId) {
+      gameRepository.getGameById(initialGameId).then(setGame);
+    }
+  }, [initialGameId]);
 
   const validateForm = () => {
     let isValid = true;
@@ -49,15 +60,15 @@ export function RequestPage() {
       const newRequestId = 'APPY-' + Math.random().toString(36).substring(2, 8).toUpperCase();
       const playerId = createUUID();
       
-      // Guardar en la única fuente de verdad
       await requestRepository.createRequest({
         playerId,
         playerName: name.trim(),
         whatsapp: normalizeWhatsApp(whatsapp),
-        requestedCards: quantity
+        requestedCards: quantity,
+        status: 'PENDIENTE',
+        gameId: initialGameId || undefined
       });
       
-      // Guardar sesión del jugador para "Mis Cartones"
       sessionStorage.setItem('currentDemoPlayerId', playerId);
       
       setRequestId(newRequestId);
@@ -93,6 +104,12 @@ export function RequestPage() {
           <div className={styles.card}>
             <h1 className={styles.title}>Solicitar Cartones</h1>
             <p className={styles.subtitle}>Completa tus datos para generar tu solicitud</p>
+            {game && (
+              <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Juego seleccionado</div>
+                <div style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-primary)' }}>{game.name}</div>
+              </div>
+            )}
             <div className={styles.form}>
               <Input
                 label="Nombre completo"
@@ -134,6 +151,12 @@ export function RequestPage() {
             <h1 className={styles.title}>Confirma tu Solicitud</h1>
             <p className={styles.subtitle}>Revisa que tus datos sean correctos</p>
             <div className={styles.summaryBox}>
+              {game && (
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Juego</span>
+                  <span className={styles.summaryValue} style={{ color: 'var(--color-primary)' }}>{game.name}</span>
+                </div>
+              )}
               <div className={styles.summaryRow}>
                 <span className={styles.summaryLabel}>Jugador</span>
                 <span className={styles.summaryValue}>{name}</span>

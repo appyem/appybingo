@@ -1,23 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { gameRepository, cardRepository } from '../repositories';
+import { getBingoLetter, speakBingoNumber } from '../utils/bingo';
 import type { Game, Card } from '@bingo-types/index';
 
 export function GameRoomPage() {
-  // 1. Validación inicial FUERA del useEffect para evitar setState síncrono
   const initialGameId = window.location.hash.replace('#/game/', '').trim();
   
   const [game, setGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState<boolean>(!!initialGameId);
   const [error, setError] = useState<string | null>(initialGameId ? null : 'ID de juego no válido');
   const [playerCards, setPlayerCards] = useState<Card[]>([]);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const prevBallRef = useRef<number | null>(null);
+  const soundEnabledRef = useRef(soundEnabled);
 
   useEffect(() => {
-    // 2. Salida temprana sin llamar a setState (el estado ya está correcto)
     if (!initialGameId) {
       return;
     }
 
-    // 3. Suscripción en tiempo real (setState dentro de callback permitido)
     const unsubscribe = gameRepository.subscribeToGame(initialGameId, (gameData) => {
       if (gameData) {
         setGame(gameData);
@@ -29,7 +30,6 @@ export function GameRoomPage() {
       setLoading(false);
     });
 
-    // 4. Carga asíncrona de cartones (setState dentro de promesa permitido)
     const playerId = sessionStorage.getItem('currentDemoPlayerId');
     if (playerId) {
       cardRepository.getCardsByPlayerId(playerId).then((cards) => {
@@ -42,6 +42,20 @@ export function GameRoomPage() {
       unsubscribe();
     };
   }, [initialGameId]);
+
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    if (game?.currentBall && game.currentBall !== prevBallRef.current) {
+      if (soundEnabledRef.current) {
+        speakBingoNumber(game.currentBall);
+        if (navigator.vibrate) navigator.vibrate(200);
+      }
+      prevBallRef.current = game.currentBall;
+    }
+  }, [game?.currentBall]);
 
   if (loading) {
     return (
@@ -159,19 +173,156 @@ export function GameRoomPage() {
         </div>
       </div>
 
+      {/* ÁREA DE SORTEO INMERSIVA */}
       <div style={{
         background: 'var(--color-bg-surface)',
         border: '1px solid var(--color-border)',
         borderRadius: 'var(--radius-xl)',
-        padding: '3rem',
+        padding: '2rem',
         marginBottom: '2rem',
         textAlign: 'center'
       }}>
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎲</div>
-        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'white', marginBottom: '0.5rem' }}>Área de Sorteo</h3>
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-          El sorteo estará disponible cuando el juego inicie.
-        </p>
+        {!soundEnabled && (game.state === 'RUNNING' || game.state === 'PAUSED') && (
+          <button
+            onClick={() => {
+              setSoundEnabled(true);
+              speakBingoNumber(game.currentBall || 1);
+            }}
+            style={{
+              width: '100%',
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              background: 'var(--color-warning)',
+              color: 'black',
+              border: 'none',
+              borderRadius: 'var(--radius-lg)',
+              fontSize: '1rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            🔊 Activar Sonido de la Sala (Necesario para escuchar las bolas)
+          </button>
+        )}
+
+        {(game.state === 'RUNNING' || game.state === 'PAUSED') ? (
+          <>
+            {/* Bola Actual Gigante */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ 
+                fontSize: '6rem', 
+                fontWeight: 900, 
+                color: 'var(--color-primary)', 
+                lineHeight: 1,
+                textShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              }}>
+                {game.currentBall ? `${getBingoLetter(game.currentBall)} ${game.currentBall}` : '--'}
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'white', marginTop: '0.5rem' }}>
+                Bola Actual
+              </h3>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+                Números sorteados: {game.drawnNumbers?.length || 0} / 75
+              </p>
+              {game.state === 'PAUSED' && (
+                <p style={{ color: 'var(--color-warning)', fontSize: '0.875rem', marginTop: '1rem', fontWeight: 600 }}>
+                  ⏸️ El sorteo está pausado
+                </p>
+              )}
+            </div>
+
+            {/* Historial de últimas 5 bolas */}
+            {game.drawnNumbers && game.drawnNumbers.length > 1 && (
+              <div style={{ marginBottom: '2rem', padding: '1rem', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Últimas bolas</div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {game.drawnNumbers.slice(-5).reverse().map((num, idx) => (
+                    <div key={num} style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: idx === 0 ? 'var(--color-bg-surface)' : 'var(--color-primary)',
+                      color: idx === 0 ? 'var(--color-text-secondary)' : 'white',
+                      border: `1px solid ${idx === 0 ? 'var(--color-border)' : 'var(--color-primary)'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.875rem',
+                      fontWeight: 700
+                    }}>
+                      {num}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tablero Visual de 75 Números */}
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Tablero de control</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
+                {['B', 'I', 'N', 'G', 'O'].map(letter => {
+                  const startNum = letter === 'B' ? 1 : letter === 'I' ? 16 : letter === 'N' ? 31 : letter === 'G' ? 46 : 61;
+                  return (
+                    <div key={letter}>
+                      <div style={{ 
+                        textAlign: 'center', 
+                        fontWeight: 900, 
+                        fontSize: '1.25rem', 
+                        color: 'var(--color-primary)', 
+                        marginBottom: '0.5rem',
+                        paddingBottom: '0.25rem',
+                        borderBottom: '2px solid var(--color-primary)'
+                      }}>
+                        {letter}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        {Array.from({ length: 15 }, (_, i) => {
+                          const num = startNum + i;
+                          const isDrawn = game.drawnNumbers?.includes(num);
+                          return (
+                            <div key={num} style={{
+                              textAlign: 'center',
+                              padding: '0.25rem',
+                              fontSize: '0.75rem',
+                              background: isDrawn ? 'var(--color-primary)' : 'var(--color-bg-elevated)',
+                              color: isDrawn ? 'white' : 'var(--color-text-secondary)',
+                              borderRadius: '4px',
+                              fontWeight: isDrawn ? 700 : 400,
+                              transition: 'all 0.3s ease'
+                            }}>
+                              {num}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        ) : game.state === 'FINISHED' ? (
+          <>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🏆</div>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Sorteo Finalizado</h3>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+              Se han sorteado los {game.drawnNumbers?.length || 0} números.
+            </p>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎲</div>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Esperando el inicio</h3>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
+              El administrador aún no ha iniciado el sorteo.
+            </p>
+          </>
+        )}
       </div>
 
       <div style={{

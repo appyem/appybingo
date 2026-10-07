@@ -5,7 +5,7 @@ import { requestRepository, cardRepository, cardAssignmentService, gameRepositor
 import type { CardRequest, RequestId, Card, Game } from '@bingo-types/index';
 import { buildAdminWhatsAppLink, formatDate } from '../utils/admin';
 import { buildApprovedWhatsAppMessage } from '../utils/cards';
-import { MessageCircle, ExternalLink, Copy, Check } from 'lucide-react';
+import { MessageCircle, ExternalLink, Copy, Check, Trash2 } from 'lucide-react';
 
 
 export function RequestDetail() {
@@ -15,6 +15,7 @@ export function RequestDetail() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deletingCard, setDeletingCard] = useState<string | null>(null);
   const [availableGames, setAvailableGames] = useState<Game[]>([]);
   const [selectedGameId, setSelectedGameId] = useState<string>('');
 
@@ -145,6 +146,24 @@ export function RequestDetail() {
     });
   };
 
+  
+  const handleDeleteCard = async (cardId: string) => {
+    if (!confirm('¿Estás seguro de eliminar este cartón? Esta acción no se puede deshacer.')) return;
+    
+    setDeletingCard(cardId);
+    try {
+      await cardRepository.deleteCard(cardId);
+      // Recargar los cartones después de eliminar
+      const updatedCards = await cardRepository.getCardsByRequestId(request!.id);
+      setCards(updatedCards);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Desconocido';
+      alert('Error al eliminar el cartón: ' + message);
+    } finally {
+      setDeletingCard(null);
+    }
+  };
+
   const handleViewCard = (cardId: string) => {
     window.location.hash = '#/carton/' + cardId;
   };
@@ -174,7 +193,7 @@ export function RequestDetail() {
             <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-primary)', fontFamily: 'monospace' }}>{request.id}</div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginTop: '0.5rem' }}>Detalle de Solicitud</h1>
           </div>
-          <StatusBadge status={request.status} />
+          <StatusBadge status={request.status || 'PENDIENTE'} />
         </div>
 
         <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', padding: '1.5rem', marginBottom: '1.5rem' }}>
@@ -231,6 +250,17 @@ export function RequestDetail() {
                       >
                         {copiedId === c.id ? <Check size={14} style={{ marginRight: '0.25rem', color: 'var(--color-success)' }} /> : <Copy size={14} style={{ marginRight: '0.25rem' }} />}
                         {copiedId === c.id ? 'Copiado' : 'Copiar'}
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleDeleteCard(c.id)}
+                        disabled={deletingCard === c.id}
+                        style={{ color: 'var(--color-error)' }}
+                        title="Eliminar cartón"
+                      >
+                        <Trash2 size={14} style={{ marginRight: '0.25rem' }} />
+                        {deletingCard === c.id ? '...' : 'Eliminar'}
                       </Button>
                       <Button variant="primary" size="sm" onClick={() => handleViewCard(c.id)}>
                         <ExternalLink size={14} style={{ marginRight: '0.25rem' }} />

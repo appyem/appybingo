@@ -1,6 +1,6 @@
 import { collection, doc, getDoc, getDocs, addDoc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import type { CardRequest, RequestId, RequestStatus, GameId } from '@bingo-types/index';
+import type { CardRequest, RequestId, RequestStatus } from '@bingo-types/index';
 import type { RequestRepository } from './RequestRepository';
 
 export class FirebaseRequestRepository implements RequestRepository {
@@ -18,26 +18,25 @@ export class FirebaseRequestRepository implements RequestRepository {
     return snap.exists() ? ({ id: snap.id, ...snap.data() } as CardRequest) : null;
   }
 
-  async createRequest(data: Omit<CardRequest, 'id' | 'createdAt' | 'status'>): Promise<CardRequest> {
+  async createRequest(data: Omit<CardRequest, 'id' | 'createdAt'>): Promise<CardRequest> {
+    const now = Date.now();
     const newDoc = await addDoc(this.col, {
       ...data,
-      status: 'PENDIENTE',
-      createdAt: Date.now()
+      status: data.status || 'PENDIENTE',
+      createdAt: now
     });
-    return { id: newDoc.id, ...data, status: 'PENDIENTE', createdAt: Date.now() };
+    return { id: newDoc.id, ...data, status: data.status || 'PENDIENTE', createdAt: now };
   }
 
-  async updateRequestStatus(id: RequestId, status: RequestStatus, reason?: string, gameId?: GameId): Promise<void> {
+  async updateRequestStatus(id: RequestId, status: RequestStatus, reason?: string, gameId?: string): Promise<void> {
     const ref = doc(db, 'requests', id);
-    const updateData: Record<string, unknown> = { status, updatedAt: Date.now() };
-    if (status === 'APROBADA') {
-      updateData.approvedAt = Date.now();
-      if (gameId) updateData.gameId = gameId;
-    }
-    if (status === 'RECHAZADA') {
-      updateData.rejectedAt = Date.now();
-      if (reason) updateData.rejectionReason = reason;
-    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateData: any = { status };
+    if (reason) updateData.rejectionReason = reason;
+    if (gameId) updateData.gameId = gameId;
+    if (status === 'APROBADA') updateData.approvedAt = Date.now();
+    if (status === 'RECHAZADA') updateData.rejectedAt = Date.now();
+    
     await updateDoc(ref, updateData);
   }
 }

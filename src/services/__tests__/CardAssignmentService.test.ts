@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { CardAssignmentService } from '../CardAssignmentService';
 import { MockRequestRepository } from '../../repositories/MockRequestRepository';
 import { MockCardRepository } from '../../repositories/MockCardRepository';
@@ -9,6 +9,64 @@ const mockCardRepo = new MockCardRepository();
 const cardAssignmentService = new CardAssignmentService(mockReqRepo, mockCardRepo);
 
 describe('CardAssignmentService', () => {
+  beforeEach(() => {
+    // Limpiar el estado interno de los mocks para que cada test sea independiente
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockReqRepo as any).requests = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockCardRepo as any).cards = [];
+
+    const now = Date.now();
+
+    // 1. Solicitud APROBADA (para test 1)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockReqRepo as any).requests.push({
+      id: 'APPY-DEF456',
+      playerId: 'player-1',
+      playerName: 'Usuario Aprobado',
+      whatsapp: '3001111111',
+      requestedCards: 1,
+      status: 'APROBADA',
+      createdAt: now
+    });
+
+    // 2. Solicitud PENDIENTE (para test 2)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockReqRepo as any).requests.push({
+      id: 'APPY-ABC123',
+      playerId: 'player-2',
+      playerName: 'Usuario Pendiente',
+      whatsapp: '3002222222',
+      requestedCards: 1,
+      status: 'PENDIENTE',
+      createdAt: now
+    });
+
+    // 3. Solicitud RECHAZADA (para test 3)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockReqRepo as any).requests.push({
+      id: 'APPY-GHI789',
+      playerId: 'player-3',
+      playerName: 'Usuario Rechazado',
+      whatsapp: '3003333333',
+      requestedCards: 1,
+      status: 'RECHAZADA',
+      createdAt: now
+    });
+
+    // 4. Solicitud APROBADA con 5 cartones (para tests 4 a 17)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockReqRepo as any).requests.push({
+      id: 'APPY-JKL012',
+      playerId: 'player-4',
+      playerName: 'Usuario 5 Cartones',
+      whatsapp: '3004444444',
+      requestedCards: 5,
+      status: 'APROBADA',
+      createdAt: now
+    });
+  });
+
   it('1. Una solicitud aprobada puede generar cartones', async () => {
     const cards = await cardAssignmentService.generateCardsForRequest('APPY-DEF456', 'game-1');
     expect(cards.length).toBeGreaterThan(0);
@@ -23,7 +81,6 @@ describe('CardAssignmentService', () => {
   });
 
   it('4. Una solicitud con cantidad N genera exactamente N cartones', async () => {
-    await mockReqRepo.updateRequestStatus('APPY-JKL012', 'APROBADA');
     const cards = await cardAssignmentService.generateCardsForRequest('APPY-JKL012', 'game-2');
     expect(cards).toHaveLength(5);
   });
@@ -58,6 +115,7 @@ describe('CardAssignmentService', () => {
   });
 
   it('15, 16. getCardsByPlayerId y getCardsByRequestId devuelven los cartones', async () => {
+    await cardAssignmentService.generateCardsForRequest('APPY-JKL012', 'game-7');
     const byReq = await mockCardRepo.getCardsByRequestId('APPY-JKL012');
     expect(byReq.length).toBeGreaterThan(0);
     const byPlayer = await mockCardRepo.getCardsByPlayerId('player-4');
@@ -65,8 +123,8 @@ describe('CardAssignmentService', () => {
   });
 
   it('17. Una solicitud ya procesada no genera cartones duplicados', async () => {
-    const cards1 = await cardAssignmentService.generateCardsForRequest('APPY-JKL012', 'game-7');
-    const cards2 = await cardAssignmentService.generateCardsForRequest('APPY-JKL012', 'game-7');
+    const cards1 = await cardAssignmentService.generateCardsForRequest('APPY-JKL012', 'game-8');
+    const cards2 = await cardAssignmentService.generateCardsForRequest('APPY-JKL012', 'game-8');
     expect(cards1.length).toBe(cards2.length);
   });
 });

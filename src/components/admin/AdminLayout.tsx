@@ -1,4 +1,4 @@
-import { ClipboardList, Ticket, Gamepad2, Settings, LogOut } from 'lucide-react';
+import { ClipboardList, Ticket, Gamepad2, Settings, LogOut, Trophy } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
 import styles from './AdminLayout.module.css';
 
@@ -14,7 +14,16 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
     <div className={styles.layout}>
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
-          <div className={styles.sidebarTitle}>APPYBINGO</div>
+          <img 
+            src="/logo.png" 
+            alt="AppyBingo" 
+            style={{ 
+              height: '60px', 
+              width: 'auto',
+              objectFit: 'contain',
+              marginBottom: '0.5rem'
+            }} 
+          />
           <div className={styles.sidebarSubtitle}>Panel Administrativo</div>
         </div>
         
@@ -39,6 +48,13 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
           >
             <Gamepad2 size={18} />
             Partidas
+          </a>
+          <a 
+            href="#/admin/winners" 
+            className={`${styles.navLink} ${currentPath === '/admin/winners' ? styles.navLinkActive : ''}`}
+          >
+            <Trophy size={18} />
+            Ganadores
           </a>
           <a 
             href="#/admin/settings" 

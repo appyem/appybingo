@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../ui/Button';
-import { Menu, X, Trophy } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import styles from './Header.module.css';
 
 export function Header() {
@@ -11,13 +11,15 @@ export function Header() {
       <div className="container">
         <div className={styles.headerInner}>
           <a href="/" className={styles.logo}>
-            <div className={styles.logoIcon}>
-              <Trophy />
-            </div>
-            <div className={styles.logoText}>
-              <span className={styles.logoTextPrimary}>APPY</span>
-              <span className={styles.logoTextSecondary}>BINGO</span>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="AppyBingo" 
+              style={{ 
+                height: '48px', 
+                width: 'auto',
+                objectFit: 'contain'
+              }} 
+            />
           </a>
 
           <nav className={styles.nav} aria-label="Navegacion principal">

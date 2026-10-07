@@ -6,4 +6,7 @@ export interface GameRepository {
   createGame(data: Omit<Game, 'id' | 'createdAt' | 'updatedAt'>): Promise<Game>;
   updateGameState(id: GameId, state: GameState): Promise<void>;
   subscribeToGame(id: GameId, callback: (game: Game | null) => void): () => void;
+  subscribeToGames(callback: (games: Game[]) => void): () => void;
+  drawNextNumber(id: GameId): Promise<number | null>;
+  deleteGame(id: GameId): Promise<void>;
 }
