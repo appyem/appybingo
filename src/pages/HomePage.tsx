@@ -448,6 +448,23 @@ function GameCard({ game, isActive, formatCurrency }: { game: Game; isActive: bo
           </span>
         </div>
         <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>Variante: {game.variant}</p>
+        {game.scheduledAt && !isActive && (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.5rem', 
+            marginTop: '0.5rem', 
+            padding: '0.5rem 0.75rem', 
+            background: 'rgba(252, 191, 73, 0.1)', 
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid rgba(252, 191, 73, 0.3)'
+          }}>
+            <span style={{ fontSize: '1rem' }}>🕒</span>
+            <span style={{ fontSize: '0.875rem', color: '#FCBF49', fontWeight: 600 }}>
+              Programado: {new Date(game.scheduledAt).toLocaleString('es-CO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1rem', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>

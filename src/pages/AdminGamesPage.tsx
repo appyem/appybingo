@@ -12,6 +12,7 @@ export function AdminGamesPage() {
   const [newGameName, setNewGameName] = useState('');
   const [pricePerCard, setPricePerCard] = useState('');
   const [prizeValue, setPrizeValue] = useState('');
+  const [scheduledDate, setScheduledDate] = useState('');
   const [creating, setCreating] = useState(false);
   const [drawing, setDrawing] = useState<string | null>(null);
   const [deletingGame, setDeletingGame] = useState<string | null>(null);
@@ -51,11 +52,13 @@ export function AdminGamesPage() {
         state: 'DRAFT',
         createdBy: 'admin',
         pricePerCard: Number(pricePerCard),
-        prizeValue: Number(prizeValue)
+        prizeValue: Number(prizeValue),
+        scheduledAt: scheduledDate ? new Date(scheduledDate).getTime() : undefined
       });
       setNewGameName('');
       setPricePerCard('');
       setPrizeValue('');
+      setScheduledDate('');
       await loadGames();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Desconocido';
@@ -227,6 +230,10 @@ export function AdminGamesPage() {
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Premio Mayor ($)</label>
                 <input type="number" placeholder="500000" value={prizeValue} onChange={(e) => setPrizeValue(e.target.value)} required min="1" style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }} />
               </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Fecha y Hora Programada</label>
+                <input type="datetime-local" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }} />
+              </div>
               <Button variant="primary" size="md" type="submit" disabled={creating || !newGameName.trim() || !pricePerCard || !prizeValue}>
                 {creating ? 'Creando...' : 'Crear Juego'}
               </Button>
@@ -242,6 +249,7 @@ export function AdminGamesPage() {
                     <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Cambiar a</th>
                     <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Sorteo</th>
                     <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Acciones</th>
+                    <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Programado</th>
                     <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Creado</th>
                   </tr>
                 </thead>
@@ -333,13 +341,16 @@ export function AdminGamesPage() {
                             <Trash2 size={18} />
                           </button>
                         </td>
-                        <td style={{ padding: '1rem', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>{formatDate(g.createdAt)}</td>
+                        <td data-label="Programado" style={{ padding: '1rem', color: g.scheduledAt ? 'var(--color-warning)' : 'var(--color-text-muted)', fontSize: '0.875rem', fontWeight: g.scheduledAt ? 600 : 400 }}>
+                          {g.scheduledAt ? new Date(g.scheduledAt).toLocaleString('es-CO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Sin programar'}
+                        </td>
+                        <td data-label="Creado" style={{ padding: '1rem', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>{formatDate(g.createdAt)}</td>
                       </tr>
                     );
                   })}
                   {games.length === 0 && (
                     <tr>
-                      <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                      <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
                         No hay juegos creados aún.
                       </td>
                     </tr>

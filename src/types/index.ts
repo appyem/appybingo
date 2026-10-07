@@ -25,6 +25,7 @@ export interface Game {
   createdAt: number; updatedAt: number; createdBy: string;
   pricePerCard: number;
   prizeValue: number;
+  scheduledAt?: number;
   currentBall?: number | null;
   drawnNumbers?: number[];
 }
