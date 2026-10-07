@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AdminLayout } from '../components/admin/AdminLayout';
 import { Button } from '../components/ui/Button';
-import { gameRepository } from '../repositories';
+import { gameRepository, cardRepository } from '../repositories';
 import { Trash2 } from 'lucide-react';
 import type { Game, GameState } from '@bingo-types/index';
 
@@ -82,6 +82,15 @@ export function AdminGamesPage() {
   };
 
   const handleDrawNumber = async (gameId: string) => {
+    // Verificar si ya hay un ganador en este juego antes de sacar otra balota
+    const allCards = await cardRepository.getCards();
+    const hasWinner = allCards.some(c => c.gameId === gameId && c.status === 'WINNER');
+    
+    if (hasWinner) {
+      alert('⚠️ ¡ATENCIÓN! Ya existe un ganador en esta partida. No se pueden sacar más balotas.');
+      return;
+    }
+
     setDrawing(gameId);
     try {
       const nextNumber = await gameRepository.drawNextNumber(gameId);
