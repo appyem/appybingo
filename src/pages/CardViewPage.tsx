@@ -101,20 +101,23 @@ export function CardViewPage() {
       winAudio.play().catch(e => console.log('Reproducción de audio requiere interacción previa:', e));
     }
   }, [isBingo]);
-  // Detectar si ya hay un ganador en este juego
+  // Detectar si ya hay un ganador en este juego (con polling cada 2s para asegurar actualización)
   useEffect(() => {
-    if (game?.id && !isBingo) {
-      cardRepository.getCards().then(cards => {
+    if (game?.id && !isBingo && (game.state === 'RUNNING' || game.state === 'PAUSED')) {
+      const checkWinner = async () => {
+        const cards = await cardRepository.getCards();
         const winningCard = cards.find(c => c.gameId === game.id && c.status === 'WINNER');
         if (winningCard) {
           setGameHasWinner(true);
-          requestRepository.getRequestById(winningCard.requestId).then(req => {
-            if (req) setWinnerName(req.playerName);
-          });
+          const req = await requestRepository.getRequestById(winningCard.requestId);
+          if (req) setWinnerName(req.playerName);
         }
-      });
+      };
+      checkWinner(); // Chequear inmediatamente
+      const interval = setInterval(checkWinner, 2000); // Chequear cada 2 segundos
+      return () => clearInterval(interval);
     }
-  }, [game?.id, game?.currentBall, isBingo]);
+  }, [game?.id, game?.state, isBingo]);
 
 
   const getDeviceId = () => {
