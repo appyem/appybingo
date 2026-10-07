@@ -65,6 +65,7 @@ export function CardViewPage() {
   
   const [markedNumbers, setMarkedNumbers] = useState<number[]>([]);
   const [pendingAutoMark, setPendingAutoMark] = useState<number | null>(null);
+  const [invalidMark, setInvalidMark] = useState<number | null>(null); // Para feedback de error
   
   const [isBingo, setIsBingo] = useState(false);
   const [showBingoButton, setShowBingoButton] = useState(false);
@@ -91,7 +92,6 @@ export function CardViewPage() {
     };
   }, []);
 
-  // Reproducir música alegre al ganar
   useEffect(() => {
     if (isBingo) {
       const winAudio = new Audio('https://cdn.pixabay.com/download/audio/2022/03/24/audio_07823a3a4d.mp3');
@@ -420,13 +420,23 @@ export function CardViewPage() {
               const num = isFree ? null : (cell as number);
               const isMarked = isFree || (num !== null && markedNumbers.includes(num));
               const isPendingAuto = !isMarked && pendingAutoMark === num;
+              const isInvalid = invalidMark === num;
 
               return (
                 <div 
                   key={`${rowIndex}-${colIndex}`}
                   onClick={() => {
                     if (!isFree && num !== null && !isMarked) {
-                      handleMarkNumber(num);
+                      // VALIDACIÓN CRÍTICA: Solo permitir marcar si la balota YA SALIÓ
+                      const hasBeenDrawn = game?.drawnNumbers?.includes(num);
+                      if (hasBeenDrawn) {
+                        handleMarkNumber(num);
+                      } else {
+                        // Feedback de error: no ha salido
+                        setInvalidMark(num);
+                        if (navigator.vibrate) navigator.vibrate(50);
+                        setTimeout(() => setInvalidMark(null), 500);
+                      }
                     }
                   }}
                   style={{
@@ -441,11 +451,11 @@ export function CardViewPage() {
                     borderRadius: '8px',
                     fontWeight: 800,
                     fontSize: isFree ? '0.7rem' : '1.1rem',
-                    border: isPendingAuto ? '2px solid var(--color-warning)' : (isFree ? 'none' : '1px solid var(--color-border)'),
+                    border: isInvalid ? '2px solid var(--color-error)' : (isPendingAuto ? '2px solid var(--color-warning)' : (isFree ? 'none' : '1px solid var(--color-border)')),
                     cursor: isFree || isMarked ? 'default' : 'pointer',
                     transition: 'all 0.2s',
                     userSelect: 'none',
-                    animation: isPendingAuto ? 'pulse-border 1s infinite' : 'none',
+                    animation: isPendingAuto ? 'pulse-border 1s infinite' : (isInvalid ? 'shake 0.5s' : 'none'),
                     position: 'relative'
                   }}
                 >
@@ -471,7 +481,6 @@ export function CardViewPage() {
         </div>
       </div>
 
-      {/* BOTÓN GIGANTE DE BINGO */}
       {showBingoButton && (
         <div style={{
           position: 'fixed',
@@ -561,7 +570,6 @@ export function CardViewPage() {
         </div>
       )}
 
-      {/* PANTALLA DE BINGO RECLAMADO (Con Logo y Premio) */}
       {isBingo && (
         <div style={{
           position: 'fixed',
@@ -578,7 +586,6 @@ export function CardViewPage() {
           animation: 'fadeIn 0.5s ease-out',
           overflow: 'hidden'
         }}>
-          {/* Logo de fondo grande y semitransparente */}
           <img 
             src="/logo.png" 
             alt="AppyBingo" 
@@ -708,6 +715,11 @@ export function CardViewPage() {
         @keyframes pulse-text { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         @keyframes bingo-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
         @keyframes bingo-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
       `}</style>
     </div>
   );
