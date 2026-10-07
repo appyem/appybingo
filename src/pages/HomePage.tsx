@@ -3,6 +3,155 @@ import { Button } from '../components/ui/Button';
 import { gameRepository } from '../repositories';
 import type { Game } from '@bingo-types/index';
 
+// Componente de Bola 3D Realista
+const BingoBall3D = ({ number, color, size = 80, delay = 0, x, y }: { 
+  number: number; 
+  color: string; 
+  size?: number; 
+  delay?: number;
+  x: string;
+  y: string;
+}) => {
+  return (
+    <div
+      className="bingo-ball-3d"
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        width: `${size}px`,
+        height: `${size}px`,
+        animation: `bounce3d 3s ease-in-out infinite`,
+        animationDelay: `${delay}s`,
+        zIndex: 2,
+      }}
+    >
+      {/* Sombra proyectada en el suelo */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '-15px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: `${size * 0.7}px`,
+          height: '12px',
+          background: 'radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 70%)',
+          borderRadius: '50%',
+          animation: 'shadowPulse 3s ease-in-out infinite',
+          animationDelay: `${delay}s`,
+        }}
+      />
+      {/* La bola 3D */}
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          borderRadius: '50%',
+          background: `radial-gradient(circle at 30% 30%, ${color} 0%, ${color}dd 40%, ${color}88 70%, #000000 100%)`,
+          boxShadow: `
+            inset -${size * 0.15}px -${size * 0.15}px ${size * 0.3}px rgba(0,0,0,0.6),
+            inset ${size * 0.1}px ${size * 0.1}px ${size * 0.2}px rgba(255,255,255,0.3),
+            0 ${size * 0.1}px ${size * 0.2}px rgba(0,0,0,0.4)
+          `,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Brillo especular superior */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '10%',
+            left: '15%',
+            width: '40%',
+            height: '25%',
+            borderRadius: '50%',
+            background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%)',
+            transform: 'rotate(-30deg)',
+            filter: 'blur(2px)',
+          }}
+        />
+        {/* Reflejo inferior suave */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '15%',
+            right: '20%',
+            width: '25%',
+            height: '15%',
+            borderRadius: '50%',
+            background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%)',
+            transform: 'rotate(20deg)',
+          }}
+        />
+        {/* Círculo blanco central con el número */}
+        <div
+          style={{
+            width: '65%',
+            height: '55%',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle at 50% 40%, #ffffff 0%, #f0f0f0 100%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          <span
+            style={{
+              fontSize: `${size * 0.18}px`,
+              fontWeight: 900,
+              color: color,
+              lineHeight: 1,
+              fontFamily: 'Arial Black, sans-serif',
+              textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+            }}
+          >
+            {number <= 15 ? 'B' : number <= 30 ? 'I' : number <= 45 ? 'N' : number <= 60 ? 'G' : 'O'}
+          </span>
+          <span
+            style={{
+              fontSize: `${size * 0.32}px`,
+              fontWeight: 900,
+              color: '#1a1a2e',
+              lineHeight: 1,
+              marginTop: '2px',
+              fontFamily: 'Arial Black, sans-serif',
+            }}
+          >
+            {number}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Partícula decorativa
+const Sparkle = ({ x, y, size, delay }: { x: string; y: string; size: number; delay: number }) => (
+  <div
+    style={{
+      position: 'absolute',
+      left: x,
+      top: y,
+      width: `${size}px`,
+      height: `${size}px`,
+      background: 'radial-gradient(circle, #FCBF49 0%, rgba(252,191,73,0) 70%)',
+      borderRadius: '50%',
+      animation: 'sparkle 2s ease-in-out infinite',
+      animationDelay: `${delay}s`,
+      pointerEvents: 'none',
+    }}
+  />
+);
+
 export function HomePage() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,73 +173,137 @@ export function HomePage() {
   return (
     <div style={{ padding: '2rem 1rem', maxWidth: '64rem', margin: '0 auto' }}>
       
-      {/* HERO SECTION CON LOGO Y Bolas DE BINGO */}
+      {/* HERO SECTION - Diseño Casa de Apuestas */}
       <div style={{ 
         position: 'relative',
         overflow: 'hidden',
         marginBottom: '4rem', 
-        padding: '4rem 2rem', 
-        background: 'linear-gradient(135deg, #1E6FE8 0%, #0077B6 100%)',
+        padding: '5rem 2rem 4rem',
         borderRadius: 'var(--radius-2xl)', 
-        border: '2px solid var(--color-border-light)',
-        boxShadow: '0 20px 60px rgba(30, 111, 232, 0.3)'
+        border: '2px solid rgba(252, 191, 73, 0.3)',
+        boxShadow: '0 25px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
+        background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
       }}>
-        {/* Bolas de Bingo Decorativas Flotantes */}
-        <div style={{ position: 'absolute', top: '10%', left: '5%', width: '60px', height: '60px', background: '#E63946', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.5rem', color: 'white', boxShadow: '0 8px 16px rgba(230, 57, 70, 0.4)', animation: 'float 3s ease-in-out infinite' }}>7</div>
-        <div style={{ position: 'absolute', top: '20%', right: '8%', width: '50px', height: '50px', background: '#9B5DE5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.25rem', color: 'white', boxShadow: '0 8px 16px rgba(155, 93, 229, 0.4)', animation: 'float 4s ease-in-out infinite 0.5s' }}>52</div>
-        <div style={{ position: 'absolute', bottom: '15%', left: '10%', width: '55px', height: '55px', background: '#2A9D8F', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.25rem', color: 'white', boxShadow: '0 8px 16px rgba(42, 157, 143, 0.4)', animation: 'float 3.5s ease-in-out infinite 1s' }}>18</div>
-        <div style={{ position: 'absolute', bottom: '20%', right: '5%', width: '65px', height: '65px', background: '#F77F00', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1.5rem', color: 'white', boxShadow: '0 8px 16px rgba(247, 127, 0, 0.4)', animation: 'float 4.5s ease-in-out infinite 1.5s' }}>34</div>
+        {/* Efectos de luz de fondo */}
+        <div style={{
+          position: 'absolute',
+          top: '-50%',
+          left: '-20%',
+          width: '60%',
+          height: '200%',
+          background: 'radial-gradient(ellipse at center, rgba(252,191,73,0.15) 0%, rgba(252,191,73,0) 70%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute',
+          bottom: '-30%',
+          right: '-10%',
+          width: '50%',
+          height: '150%',
+          background: 'radial-gradient(ellipse at center, rgba(230,57,70,0.1) 0%, rgba(230,57,70,0) 70%)',
+          pointerEvents: 'none',
+        }} />
 
+        {/* Partículas decorativas */}
+        <Sparkle x="10%" y="20%" size={6} delay={0} />
+        <Sparkle x="85%" y="15%" size={8} delay={0.5} />
+        <Sparkle x="75%" y="70%" size={5} delay={1} />
+        <Sparkle x="20%" y="75%" size={7} delay={1.5} />
+        <Sparkle x="50%" y="10%" size={4} delay={0.8} />
+
+        {/* Bolas 3D Realistas con rebote */}
+        <BingoBall3D number={7} color="#E63946" size={70} delay={0} x="5%" y="15%" />
+        <BingoBall3D number={52} color="#9B5DE5" size={60} delay={0.5} x="78%" y="10%" />
+        <BingoBall3D number={18} color="#2A9D8F" size={65} delay={1} x="8%" y="65%" />
+        <BingoBall3D number={34} color="#F77F00" size={75} delay={1.5} x="75%" y="60%" />
+
+        {/* Contenido central */}
         <div style={{ 
           display: 'flex', 
           flexDirection: 'column', 
           alignItems: 'center', 
           gap: '2rem', 
           position: 'relative',
-          zIndex: 1
+          zIndex: 10
         }}>
-          {/* Logo Grande */}
-          <img 
-            src="/logo.png" 
-            alt="AppyBingo" 
-            style={{ 
-              height: '120px', 
-              width: 'auto',
-              objectFit: 'contain',
-              filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.3))'
-            }} 
-          />
+          {/* Logo con efecto de brillo */}
+          <div style={{ position: 'relative' }}>
+            <img 
+              src="/logo.png" 
+              alt="AppyBingo" 
+              style={{ 
+                height: '140px', 
+                width: 'auto',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 15px 30px rgba(0,0,0,0.5))',
+                animation: 'logoFloat 4s ease-in-out infinite',
+              }} 
+            />
+          </div>
 
           {/* Texto de Bienvenida */}
           <div style={{ textAlign: 'center', maxWidth: '48rem' }}>
-            <h1 style={{ fontSize: '3rem', fontWeight: 900, color: 'white', marginBottom: '1rem', lineHeight: 1.1, textShadow: '0 4px 8px rgba(0,0,0,0.3)' }}>
-              ¡La emoción del <span style={{ color: '#FCBF49' }}>Bingo</span> en tiempo real!
+            <h1 style={{ 
+              fontSize: '3.5rem', 
+              fontWeight: 900, 
+              color: 'white', 
+              marginBottom: '1rem', 
+              lineHeight: 1.1,
+              textShadow: '0 4px 8px rgba(0,0,0,0.5), 0 0 40px rgba(252,191,73,0.3)',
+              letterSpacing: '-0.02em',
+            }}>
+              ¡La emoción del{' '}
+              <span style={{ 
+                color: '#FCBF49',
+                textShadow: '0 0 20px rgba(252,191,73,0.6), 0 4px 8px rgba(0,0,0,0.5)',
+              }}>
+                Bingo
+              </span>{' '}
+              en tiempo real!
             </h1>
-            <p style={{ fontSize: '1.25rem', color: '#B8D4F0', maxWidth: '36rem', margin: '0 auto 2rem', fontWeight: 500 }}>
+            <p style={{ 
+              fontSize: '1.25rem', 
+              color: '#d4d4e8', 
+              maxWidth: '36rem', 
+              margin: '0 auto 2.5rem', 
+              fontWeight: 400,
+              lineHeight: 1.6,
+            }}>
               Segura, emocionante y desde cualquier dispositivo. Elige tu partida, solicita tus cartones y ¡que comience la suerte!
             </p>
-            <Button 
-              variant="primary" 
-              size="lg" 
-              onClick={() => {
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const firstUpcoming = upcomingGames[0];
                 if (firstUpcoming) {
-                  window.location.hash = `#/solicitar/${firstUpcoming.id}`;
+                  window.location.hash = '#/solicitar/' + firstUpcoming.id;
                 } else {
-                  window.location.hash = '#/solicitar';
+                  window.location.hash = '#solicitar';
                 }
               }}
+              className="cta-button-premium"
               style={{
                 background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
                 color: '#0A1628',
-                fontWeight: 700,
-                fontSize: '1.125rem',
-                padding: '1rem 2rem',
-                boxShadow: '0 8px 20px rgba(252, 191, 73, 0.4)'
+                fontWeight: 800,
+                fontSize: '1.25rem',
+                padding: '1.25rem 3rem',
+                border: 'none',
+                borderRadius: '9999px',
+                boxShadow: '0 10px 30px rgba(252,191,73,0.4)',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontFamily: 'inherit',
+                position: 'relative',
+                zIndex: 20,
               }}
             >
               🎟️ Solicitar Cartones Ahora
-            </Button>
+            </button>
           </div>
         </div>
       </div>
@@ -136,6 +349,56 @@ export function HomePage() {
           </div>
         )}
       </div>
+
+      <style>{`
+        @keyframes bounce3d {
+          0%, 100% { 
+            transform: translateY(0) scale(1); 
+          }
+          50% { 
+            transform: translateY(-25px) scale(1.05); 
+          }
+        }
+        @keyframes shadowPulse {
+          0%, 100% { 
+            transform: translateX(-50%) scale(1); 
+            opacity: 0.6;
+          }
+          50% { 
+            transform: translateX(-50%) scale(0.7); 
+            opacity: 0.3;
+          }
+        }
+        @keyframes sparkle {
+          0%, 100% { 
+            opacity: 0; 
+            transform: scale(0.5); 
+          }
+          50% { 
+            opacity: 1; 
+            transform: scale(1.2); 
+          }
+        }
+        @keyframes logoFloat {
+          0%, 100% { 
+            transform: translateY(0); 
+          }
+          50% { 
+            transform: translateY(-8px); 
+          }
+        }
+        @keyframes pulse-glow {
+          0%, 100% { opacity: 1; box-shadow: 0 0 12px #E63946; }
+          50% { opacity: 0.6; box-shadow: 0 0 20px #E63946; }
+        }
+        .cta-button-premium:hover {
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 15px 40px rgba(252,191,73,0.6), 0 0 0 8px rgba(252,191,73,0.1) !important;
+        }
+        .cta-button-premium:active {
+          transform: translateY(0) scale(0.98);
+        }
+      `}</style>
     </div>
   );
 }
