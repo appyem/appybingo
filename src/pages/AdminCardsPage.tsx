@@ -55,7 +55,56 @@ export function AdminCardsPage() {
   );
 
   return (
-    <AdminLayout currentPath="/admin/cards">
+    <>
+      
+      <style>{`
+        @media (max-width: 768px) {
+          .admin-table-container {
+            overflow-x: visible !important;
+            background: transparent !important;
+            border: none !important;
+          }
+          .admin-table, .admin-table tbody, .admin-table tr, .admin-table td {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .admin-table thead {
+            display: none;
+          }
+          .admin-table tr {
+            margin-bottom: 1rem;
+            background: var(--color-bg-surface);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            border: 1px solid var(--color-border);
+          }
+          .admin-table td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--color-border);
+            text-align: right;
+          }
+          .admin-table td:last-child {
+            border-bottom: none;
+            justify-content: flex-end;
+            margin-top: 0.5rem;
+          }
+          .admin-table td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: var(--color-text-muted);
+            font-size: 0.875rem;
+            text-align: left;
+            flex-shrink: 0;
+            margin-right: 1rem;
+          }
+        }
+      `}</style>
+
+      <AdminLayout currentPath="/admin/cards">
       <div style={{padding:'2rem'}}>
         <h1 style={{fontSize:'1.875rem', fontWeight:700, color:'white', marginBottom:'2rem'}}>Gestión de Cartones</h1>
         
@@ -75,7 +124,7 @@ export function AdminCardsPage() {
               style={{width:'100%', padding:'0.75rem 1rem', background:'var(--color-bg-elevated)', border:'1px solid var(--color-border)', borderRadius:'var(--radius-lg)', color:'white', marginBottom:'1.5rem', fontSize:'0.875rem'}} 
             />
             
-            <div style={{overflowX:'auto', background:'var(--color-bg-surface)', border:'1px solid var(--color-border)', borderRadius:'var(--radius-xl)'}}>
+            <div className="admin-table-container" style={{overflowX:'auto', background:'var(--color-bg-surface)', border:'1px solid var(--color-border)', borderRadius:'var(--radius-xl)'}}>
               <table style={{width:'100%', borderCollapse:'collapse', minWidth:'700px'}}>
                 <thead>
                   <tr style={{background:'var(--color-bg-elevated)'}}>
@@ -88,15 +137,15 @@ export function AdminCardsPage() {
                 <tbody>
                   {filtered.map(c => (
                     <tr key={c.id} style={{borderTop:'1px solid var(--color-border)'}}>
-                      <td style={{padding:'1rem', color:'white', fontFamily:'monospace', fontWeight:600}}>{c.cardNumberFormatted}</td>
-                      <td style={{padding:'1rem', color:'var(--color-text-secondary)'}}>{c.requestId}</td>
-                      <td style={{padding:'1rem'}}>
+                      <td data-label="Número" style={{padding:'1rem', color:'white', fontFamily:'monospace', fontWeight:600}}>{c.cardNumberFormatted}</td>
+                      <td data-label="Solicitud" style={{padding:'1rem', color:'var(--color-text-secondary)'}}>{c.requestId}</td>
+                      <td data-label="Estado" style={{padding:'1rem'}}>
                         <span style={{padding:'0.25rem 0.5rem', borderRadius:'9999px', fontSize:'0.75rem', fontWeight:600, background:'rgba(16,185,129,0.1)', color:'var(--color-success)', border:'1px solid rgba(16,185,129,0.3)'}}>
                           {c.status}
                         </span>
                       </td>
-                      <td style={{padding:'1rem'}}>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <td data-label="Acciones" style={{padding:'1rem'}}>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                           <Button variant="ghost" size="sm" onClick={() => window.location.hash = '#/carton/' + c.id}>
                             <ExternalLink size={14} style={{ marginRight: '0.25rem' }} />
                             Ver
@@ -139,5 +188,6 @@ export function AdminCardsPage() {
         )}
       </div>
     </AdminLayout>
+    </>
   );
 }
