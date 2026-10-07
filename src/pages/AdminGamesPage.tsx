@@ -152,21 +152,26 @@ export function AdminGamesPage() {
             overflow-y: auto !important;
             max-height: 65vh;
             -webkit-overflow-scrolling: touch;
+            width: 100% !important;
           }
-          .admin-table, .admin-table tbody, .admin-table tr, .admin-table td {
+          .admin-table {
+            display: block !important;
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+          .admin-table tbody {
             display: block;
             width: 100%;
-            box-sizing: border-box;
-          }
-          .admin-table thead {
-            display: none;
           }
           .admin-table tr {
+            display: block;
+            width: 100%;
             margin-bottom: 0.75rem;
             background: var(--color-bg-elevated);
             border-radius: var(--radius-md);
             padding: 0.75rem;
             border: 1px solid var(--color-border);
+            box-sizing: border-box;
           }
           .admin-table td {
             display: flex;
@@ -175,6 +180,8 @@ export function AdminGamesPage() {
             padding: 0.5rem 0;
             border-bottom: 1px solid var(--color-border);
             font-size: 0.875rem;
+            width: 100%;
+            box-sizing: border-box;
           }
           .admin-table td:last-child {
             border-bottom: none;
@@ -188,6 +195,9 @@ export function AdminGamesPage() {
             flex-shrink: 0;
             margin-right: 1rem;
             text-align: left;
+          }
+          .admin-table thead {
+            display: none;
           }
         }
       `}</style>
