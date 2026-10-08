@@ -106,6 +106,30 @@ export function AdminGamesPage() {
     }
   };
 
+  const handleShareGame = async (gameId: string, gameName: string) => {
+    const shareUrl = `${window.location.origin}/#/solicitar/${gameId}`;
+    const shareData = {
+      title: `¡Juega AppyBingo: ${gameName}!`,
+      text: `Solicita tu cartón para la partida ${gameName}. ¡Mucha suerte! 🍀`,
+      url: shareUrl
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Error al compartir:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('¡Enlace copiado al portapapeles!');
+      } catch (err) {
+        console.log('Error al copiar:', err);
+      }
+    }
+  };
+
   const handleDeleteGame = async (gameId: string, gameName: string) => {
     if (!confirm(`¿Estás seguro de eliminar el juego "${gameName}"? Esta acción no se puede deshacer y los cartones asociados quedarán huérfanos.`)) return;
     
@@ -257,6 +281,7 @@ export function AdminGamesPage() {
                     <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Estado Actual</th>
                     <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Cambiar a</th>
                     <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Sorteo</th>
+                    <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Compartir</th>
                     <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Acciones</th>
                     <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Programado</th>
                     <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--color-text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 600 }}>Creado</th>
@@ -330,6 +355,26 @@ export function AdminGamesPage() {
                         </td>
                         <td style={{ padding: '1rem', textAlign: 'center' }}>
                           <button
+                            onClick={() => handleShareGame(g.id, g.name)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--color-primary)',
+                              cursor: 'pointer',
+                              padding: '0.5rem',
+                              borderRadius: 'var(--radius-md)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              margin: '0 auto'
+                            }}
+                            title="Compartir enlace de solicitud"
+                          >
+                            🔗
+                          </button>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <button
                             onClick={() => handleDeleteGame(g.id, g.name)}
                             disabled={deletingGame === g.id}
                             style={{
@@ -359,7 +404,7 @@ export function AdminGamesPage() {
                   })}
                   {games.length === 0 && (
                     <tr>
-                      <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                      <td colSpan={9} style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
                         No hay juegos creados aún.
                       </td>
                     </tr>

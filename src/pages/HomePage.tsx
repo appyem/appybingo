@@ -404,6 +404,31 @@ export function HomePage() {
 }
 
 function GameCard({ game, isActive, formatCurrency }: { game: Game; isActive: boolean; formatCurrency: (v: number) => string }) {
+  
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/#/solicitar/${game.id}`;
+    const shareData = {
+      title: `¡Juega AppyBingo: ${game.name}!`,
+      text: `Únete a la partida ${game.name} y solicita tu cartón ahora. ¡Mucha suerte! 🍀`,
+      url: shareUrl
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Error al compartir:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('¡Enlace copiado al portapapeles! Envíalo a tus amigos.');
+      } catch (err) {
+        console.log('Error al copiar:', err);
+      }
+    }
+  };
+
   const borderColor = isActive ? '#E63946' : '#2A9D8F';
   const badgeBg = isActive ? 'rgba(230, 57, 70, 0.15)' : 'rgba(42, 157, 143, 0.15)';
   const badgeColor = isActive ? '#E63946' : '#2A9D8F';
@@ -509,6 +534,30 @@ function GameCard({ game, isActive, formatCurrency }: { game: Game; isActive: bo
             🎟️ Solicitar Cartones
           </Button>
         )}
+      
+        <button
+          onClick={handleShare}
+          style={{
+            marginTop: '0.5rem',
+            padding: '0.75rem',
+            background: 'transparent',
+            color: 'var(--color-text-secondary)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            cursor: 'pointer',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-bg-elevated)'; e.currentTarget.style.color = 'white'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
+        >
+          🔗 Compartir partida
+        </button>
       </div>
     </div>
   );
