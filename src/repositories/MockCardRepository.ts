@@ -72,16 +72,27 @@ export class MockCardRepository implements CardRepository {
     }
   }
 
-  async claimBingo(cardId: CardId): Promise<void> {
+  async claimBingo(cardId: CardId): Promise<{ success: boolean; alreadyWon?: boolean }> {
     const index = this.cards.findIndex(c => c.id === cardId);
-    if (index !== -1) {
-      this.cards[index] = {
-        ...this.cards[index],
-        bingoClaimedAt: Date.now(),
-        bingoClaimedBy: 'device',
-        status: 'WINNER'
-      };
+    if (index === -1) return { success: false };
+    
+    const gameId = this.cards[index].gameId;
+    
+    // Verificar si YA existe un ganador en este juego
+    const hasWinner = this.cards.some(c => c.gameId === gameId && c.status === 'WINNER');
+    if (hasWinner) {
+      return { success: false, alreadyWon: true };
     }
+    
+    // Nadie ha ganado aún, ¡este es el primero!
+    this.cards[index] = {
+      ...this.cards[index],
+      bingoClaimedAt: Date.now(),
+      bingoClaimedBy: 'device',
+      status: 'WINNER'
+    };
+    
+    return { success: true };
   }
 }
 

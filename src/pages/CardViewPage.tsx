@@ -68,6 +68,7 @@ export function CardViewPage() {
   const [invalidMark, setInvalidMark] = useState<number | null>(null); // Para feedback de error
   
   const [isBingo, setIsBingo] = useState(false);
+  const [showTooLateMessage, setShowTooLateMessage] = useState(false);
   const [gameHasWinner, setGameHasWinner] = useState(false);
   const [winnerName, setWinnerName] = useState<string | null>(null);
   const [showBingoButton, setShowBingoButton] = useState(false);
@@ -179,29 +180,43 @@ export function CardViewPage() {
     loadCard();
   }, [cardId]);
 
-  const handleClaimBingo = useCallback(async () => {
-    if (isBingo) return;
+    const handleClaimBingo = useCallback(async () => {
+    if (isBingo || showTooLateMessage) return;
     
-    setIsBingo(true);
-    setShowBingoButton(false);
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    if (bingoTimerRef.current) clearTimeout(bingoTimerRef.current);
-    
+    // Capa 1: Verificación frontend inmediata
+    if (gameHasWinner) {
+      setShowTooLateMessage(true);
+      setShowBingoButton(false);
+      return;
+    }
+
     try {
       if (cardId) {
-        await cardRepository.claimBingo(cardId);
-        if (soundEnabledRef.current) {
-          const utterance = new SpeechSynthesisUtterance('¡Bingo! ¡Felicidades!');
-          utterance.lang = 'es-CO';
-          utterance.volume = 1;
-          window.speechSynthesis.speak(utterance);
+        // Capa 2: Verificación en la fuente de la verdad (Repositorio)
+        const result = await cardRepository.claimBingo(cardId);
+        
+        if (result.alreadyWon) {
+          setShowTooLateMessage(true);
+          setShowBingoButton(false);
+        } else if (result.success) {
+          setIsBingo(true);
+          setShowBingoButton(false);
+          if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+          if (bingoTimerRef.current) clearTimeout(bingoTimerRef.current);
+          
+          if (soundEnabledRef.current) {
+            const utterance = new SpeechSynthesisUtterance('¡Bingo! ¡Felicidades!');
+            utterance.lang = 'es-CO';
+            utterance.volume = 1;
+            window.speechSynthesis.speak(utterance);
+          }
+          if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
         }
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
       }
     } catch (err) {
       console.error('Error al reclamar Bingo:', err);
     }
-  }, [cardId, isBingo]);
+  }, [cardId, isBingo, showTooLateMessage, gameHasWinner]);
 
   const checkForBingo = useCallback((marked: number[]) => {
     if (!card) return;
@@ -671,6 +686,56 @@ export function CardViewPage() {
           ? '¡Atento! Toca los números en tu cartón. Si no lo haces en 6 segundos, se marcarán solos.' 
           : 'El sorteo comenzará pronto. Mantén esta pantalla abierta.'}
       </div>
+
+      
+      
+      {/* PANTALLA DE "TE FALTÓ RAPIDEZ" */}
+      {showTooLateMessage && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.95)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 400,
+          animation: 'fadeIn 0.5s ease-out',
+          padding: '2rem',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '5rem', marginBottom: '1rem', animation: 'shake 0.5s' }}>⏱️</div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#E63946', marginBottom: '1rem', textShadow: '0 4px 8px rgba(0,0,0,0.5)' }}>
+            ¡Te faltó rapidez!
+          </h1>
+          <p style={{ fontSize: '1.25rem', color: 'white', marginBottom: '2rem', fontWeight: 600, maxWidth: '400px' }}>
+            Otro jugador presionó el botón de BINGO unos milisegundos antes que tú.
+          </p>
+          <p style={{ fontSize: '1.5rem', color: '#FCBF49', fontWeight: 700, marginBottom: '2rem' }}>
+            ¡Suerte para la próxima! 🍀
+          </p>
+          <button 
+            onClick={() => window.location.hash = '#/'}
+            style={{
+              padding: '1rem 2.5rem',
+              background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
+              color: '#0A1628',
+              border: 'none',
+              borderRadius: '9999px',
+              fontSize: '1.125rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              boxShadow: '0 10px 30px rgba(252,191,73,0.4)',
+              transition: 'transform 0.2s'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            Volver al Inicio
+          </button>
+        </div>
+      )}
+
 
       
       {/* PANTALLA DE "YA HUBO UN GANADOR" PARA CARTONES PERDEDORES */}

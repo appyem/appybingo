@@ -121,13 +121,29 @@ export class FirebaseCardRepository implements CardRepository {
     });
   }
 
-  async claimBingo(cardId: CardId): Promise<void> {
-    const ref = doc(db, 'cards', cardId);
-    await updateDoc(ref, {
+  async claimBingo(cardId: CardId): Promise<{ success: boolean; alreadyWon?: boolean }> {
+    const cardRef = doc(db, 'cards', cardId);
+    const cardSnap = await getDoc(cardRef);
+    if (!cardSnap.exists()) return { success: false };
+    
+    const cardData = cardSnap.data() as Record<string, unknown>;
+    
+    // Verificar si YA existe un ganador en este juego (Fuente de la verdad)
+    const q = query(this.col, where('gameId', '==', cardData.gameId as string), where('status', '==', 'WINNER'));
+    const winnerSnap = await getDocs(q);
+    
+    if (!winnerSnap.empty) {
+      return { success: false, alreadyWon: true };
+    }
+    
+    // Nadie ha ganado aún, ¡este es el primero!
+    await updateDoc(cardRef, {
       bingoClaimedAt: Date.now(),
       bingoClaimedBy: 'device',
       status: 'WINNER'
     });
+    
+    return { success: true };
   }
 }
 

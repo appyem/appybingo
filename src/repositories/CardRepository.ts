@@ -12,5 +12,5 @@ export interface CardRepository {
   updateCardOpenStatus(cardId: CardId, deviceId: string): Promise<void>;
   deleteCard(cardId: CardId): Promise<void>;
   markNumber(cardId: CardId, number: number): Promise<void>;
-  claimBingo(cardId: CardId): Promise<void>;
+  claimBingo(cardId: CardId): Promise<{ success: boolean; alreadyWon?: boolean }>;
 }
