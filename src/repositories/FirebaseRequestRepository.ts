@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, addDoc, updateDoc, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { CardRequest, RequestId, RequestStatus } from '@bingo-types/index';
 import type { RequestRepository } from './RequestRepository';
@@ -19,6 +19,20 @@ export class FirebaseRequestRepository implements RequestRepository {
   }
 
   async createRequest(data: Omit<CardRequest, 'id' | 'createdAt'>): Promise<CardRequest> {
+    // Verificar si ya existe una solicitud pendiente para este WhatsApp y juego
+    if (data.whatsapp && data.gameId) {
+      const q = query(
+        this.col, 
+        where('whatsapp', '==', data.whatsapp), 
+        where('gameId', '==', data.gameId),
+        where('status', '==', 'PENDIENTE')
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        throw new Error('Ya tienes una solicitud pendiente para este juego. Por favor espera a que sea procesada.');
+      }
+    }
+
     const now = Date.now();
     const newDoc = await addDoc(this.col, {
       ...data,
