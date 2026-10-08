@@ -94,6 +94,7 @@ export function RequestPage() {
   const [nameError, setNameError] = useState('');
   const [whatsappError, setWhatsappError] = useState('');
   const [requestId, setRequestId] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (initialGameId) {
@@ -120,22 +121,30 @@ export function RequestPage() {
   };
 
   const handleContinue = async () => {
-    if (validateForm()) {
-      const newRequestId = 'APPY-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-      const playerId = createUUID();
-      
-      await requestRepository.createRequest({
-        playerId,
-        playerName: name.trim(),
-        whatsapp: normalizeWhatsApp(whatsapp),
-        requestedCards: quantity,
-        status: 'PENDIENTE',
-        gameId: initialGameId || undefined
-      });
-      
-      sessionStorage.setItem('currentDemoPlayerId', playerId);
-      setRequestId(newRequestId);
-      setStep('SUMMARY');
+    if (validateForm() && !isSubmitting) {
+      setIsSubmitting(true);
+      try {
+        const newRequestId = 'APPY-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const playerId = createUUID();
+        
+        await requestRepository.createRequest({
+          playerId,
+          playerName: name.trim(),
+          whatsapp: normalizeWhatsApp(whatsapp),
+          requestedCards: quantity,
+          status: 'PENDIENTE',
+          gameId: initialGameId || undefined
+        });
+        
+        sessionStorage.setItem('currentDemoPlayerId', playerId);
+        setRequestId(newRequestId);
+        setStep('SUMMARY');
+      } catch (error) {
+        console.error('Error al crear solicitud:', error);
+        alert('Ocurrió un error al procesar tu solicitud. Por favor intenta de nuevo.');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -259,8 +268,10 @@ export function RequestPage() {
                 type="button"
                 className="request-cta"
                 onClick={handleContinue}
+                disabled={isSubmitting}
+                style={{ opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
               >
-                Continuar
+                {isSubmitting ? 'Procesando...' : 'Continuar'}
               </button>
             </div>
           </div>
