@@ -106,28 +106,13 @@ export function AdminGamesPage() {
     }
   };
 
-  const handleShareGame = async (gameId: string, gameName: string) => {
+    const handleShareGame = (gameId: string, gameName: string) => {
     const shareUrl = `${window.location.origin}/#/solicitar/${gameId}`;
-    const shareData = {
-      title: `¡Juega AppyBingo: ${gameName}!`,
-      text: `Solicita tu cartón para la partida ${gameName}. ¡Mucha suerte! 🍀`,
-      url: shareUrl
-    };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.log('Error al compartir:', err);
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        alert('¡Enlace copiado al portapapeles!');
-      } catch (err) {
-        console.log('Error al copiar:', err);
-      }
-    }
+    const message = `¡Juega AppyBingo: ${gameName}!\nSolicita tu cartón ahora. ¡Mucha suerte! 🍀\n${shareUrl}`;
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Forzar apertura de WhatsApp nativo (App móvil o Desktop)
+    window.location.href = `https://api.whatsapp.com/send?text=${encodedMessage}`;
   };
 
   const handleDeleteGame = async (gameId: string, gameName: string) => {

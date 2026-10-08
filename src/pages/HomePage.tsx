@@ -405,28 +405,13 @@ export function HomePage() {
 
 function GameCard({ game, isActive, formatCurrency }: { game: Game; isActive: boolean; formatCurrency: (v: number) => string }) {
   
-  const handleShare = async () => {
+    const handleShare = () => {
     const shareUrl = `${window.location.origin}/#/solicitar/${game.id}`;
-    const shareData = {
-      title: `¡Juega AppyBingo: ${game.name}!`,
-      text: `Únete a la partida ${game.name} y solicita tu cartón ahora. ¡Mucha suerte! 🍀`,
-      url: shareUrl
-    };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.log('Error al compartir:', err);
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        alert('¡Enlace copiado al portapapeles! Envíalo a tus amigos.');
-      } catch (err) {
-        console.log('Error al copiar:', err);
-      }
-    }
+    const message = `¡Juega AppyBingo: ${game.name}!\nSolicita tu cartón ahora. ¡Mucha suerte! 🍀\n${shareUrl}`;
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Forzar apertura de WhatsApp nativo (App móvil o Desktop)
+    window.location.href = `https://api.whatsapp.com/send?text=${encodedMessage}`;
   };
 
   const borderColor = isActive ? '#E63946' : '#2A9D8F';
