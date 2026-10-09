@@ -57,7 +57,6 @@ export function MyCardsPage() {
   const [invalidMark, setInvalidMark] = useState<string | null>(null);
   const [pendingAutoMarks, setPendingAutoMarks] = useState<Set<string>>(new Set());
   
-  // Estados para la lógica de Bingo y desempate
   const [gameHasWinner, setGameHasWinner] = useState(false);
   const [winnerName, setWinnerName] = useState<string>('');
   const [showTooLateMessage, setShowTooLateMessage] = useState(false);
@@ -65,8 +64,115 @@ export function MyCardsPage() {
   const prevBallRef = useRef<number | null>(null);
   const soundEnabledRef = useRef(soundEnabled);
   const autoMarkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoClaimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 1. Carga de datos
+  // 1. Helper para verificar Bingo localmente (Sin dependencias, seguro al inicio)
+  const checkHasBingo = useCallback((card: Card, currentMarks: Set<number>) => {
+    const matrix = card.matrix;
+    for (let r = 0; r < 5; r++) {
+      let full = true;
+      for (let c = 0; c < 5; c++) {
+        const val = matrix[r][c];
+        if (val !== 'FREE' && val !== null && !currentMarks.has(val)) { full = false; break; }
+      }
+      if (full) return true;
+    }
+    for (let c = 0; c < 5; c++) {
+      let full = true;
+      for (let r = 0; r < 5; r++) {
+        const val = matrix[r][c];
+        if (val !== 'FREE' && val !== null && !currentMarks.has(val)) { full = false; break; }
+      }
+      if (full) return true;
+    }
+    let d1 = true, d2 = true;
+    for (let i = 0; i < 5; i++) {
+      const v1 = matrix[i][i];
+      if (v1 !== 'FREE' && v1 !== null && !currentMarks.has(v1)) d1 = false;
+      const v2 = matrix[i][4 - i];
+      if (v2 !== 'FREE' && v2 !== null && !currentMarks.has(v2)) d2 = false;
+    }
+    return d1 || d2;
+  }, []);
+
+  // 2. Función para CANTAR BINGO (Declarada antes de ser usada en handleMarkNumber)
+  const handleClaimBingo = useCallback(async (cardId: string) => {
+    if (gameHasWinner || showTooLateMessage) return;
+    
+    if (autoClaimTimerRef.current) {
+      clearTimeout(autoClaimTimerRef.current);
+      autoClaimTimerRef.current = null;
+    }
+    
+    try {
+      const result = await cardRepository.claimBingo(cardId);
+      if (result.alreadyWon) {
+        setShowTooLateMessage(true);
+      } else if (result.success) {
+        setGameHasWinner(true);
+        const req = await requestRepository.getRequestById((cards.find(c => c.id === cardId)?.requestId || ''));
+        if (req) setWinnerName(req.playerName);
+        
+        if (soundEnabledRef.current) {
+          const utterance = new SpeechSynthesisUtterance('¡Bingo! ¡Felicidades, tenemos un ganador!');
+          utterance.lang = 'es-CO';
+          utterance.volume = 1;
+          window.speechSynthesis.speak(utterance);
+        }
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+      }
+    } catch (err) {
+      console.error('Error al reclamar Bingo:', err);
+    }
+  }, [gameHasWinner, showTooLateMessage, cards]);
+
+  // 3. Función de marcado manual y auto-cantado
+  const handleMarkNumber = useCallback(async (cardId: string, number: number) => {
+    const currentMarks = markedStates[cardId] || new Set<number>();
+    if (currentMarks.has(number)) return;
+    
+    const hasBeenDrawn = game?.drawnNumbers?.includes(number);
+    if (!hasBeenDrawn) {
+      setInvalidMark(`${cardId}-${number}`);
+      if (navigator.vibrate) navigator.vibrate(50);
+      setTimeout(() => setInvalidMark(null), 500);
+      return;
+    }
+
+    setPendingAutoMarks(prev => {
+      const pendingKey = `${cardId}-${number}`;
+      if (prev.has(pendingKey)) {
+        const next = new Set(prev);
+        next.delete(pendingKey);
+        if (next.size === 0 && autoMarkTimerRef.current) {
+          clearTimeout(autoMarkTimerRef.current);
+          autoMarkTimerRef.current = null;
+        }
+        return next;
+      }
+      return prev;
+    });
+
+    const newMarks = new Set(currentMarks);
+    newMarks.add(number);
+    setMarkedStates(prev => ({ ...prev, [cardId]: newMarks }));
+
+    try {
+      await cardRepository.markNumber(cardId, number);
+      
+      const targetCard = cards.find(c => c.id === cardId);
+      if (targetCard && checkHasBingo(targetCard, newMarks)) {
+        if (autoClaimTimerRef.current) clearTimeout(autoClaimTimerRef.current);
+        autoClaimTimerRef.current = setTimeout(() => {
+          handleClaimBingo(cardId);
+        }, 7000);
+      }
+    } catch (err) {
+      console.error('Error al marcar número:', err);
+    }
+  }, [game?.drawnNumbers, markedStates, cards, checkHasBingo, handleClaimBingo]);
+
+  // 4. Carga de datos
   useEffect(() => {
     let fetchPromise: Promise<Card[]>;
     let unsubscribeGame: (() => void) | undefined;
@@ -101,54 +207,16 @@ export function MyCardsPage() {
     return () => { 
       if (unsubscribeGame) unsubscribeGame();
       if (autoMarkTimerRef.current) clearTimeout(autoMarkTimerRef.current);
+      if (autoClaimTimerRef.current) clearTimeout(autoClaimTimerRef.current);
     };
   }, [requestId]);
 
-  // 2. Sincronización de sonido
+  // 5. Sincronización de sonido
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // 3. Función de marcado manual
-  const handleMarkNumber = useCallback(async (cardId: string, number: number) => {
-    const currentMarks = markedStates[cardId] || new Set<number>();
-    if (currentMarks.has(number)) return;
-    
-    const hasBeenDrawn = game?.drawnNumbers?.includes(number);
-    if (!hasBeenDrawn) {
-      setInvalidMark(`${cardId}-${number}`);
-      if (navigator.vibrate) navigator.vibrate(50);
-      setTimeout(() => setInvalidMark(null), 500);
-      return;
-    }
-
-    // Si el usuario marca manualmente, quitar de pendientes y cancelar timer
-    setPendingAutoMarks(prev => {
-      const pendingKey = `${cardId}-${number}`;
-      if (prev.has(pendingKey)) {
-        const next = new Set(prev);
-        next.delete(pendingKey);
-        if (next.size === 0 && autoMarkTimerRef.current) {
-          clearTimeout(autoMarkTimerRef.current);
-          autoMarkTimerRef.current = null;
-        }
-        return next;
-      }
-      return prev;
-    });
-
-    const newMarks = new Set(currentMarks);
-    newMarks.add(number);
-    setMarkedStates(prev => ({ ...prev, [cardId]: newMarks }));
-
-    try {
-      await cardRepository.markNumber(cardId, number);
-    } catch (err) {
-      console.error('Error al marcar número:', err);
-    }
-  }, [game?.drawnNumbers, markedStates]);
-
-  // 4. Efecto para sonido y AUTO-MARCADO MÚLTIPLE
+  // 6. Efecto para sonido y AUTO-MARCADO MÚLTIPLE
   useEffect(() => {
     if (game?.currentBall && game.currentBall !== prevBallRef.current) {
       const ball = game.currentBall;
@@ -188,7 +256,7 @@ export function MyCardsPage() {
     }
   }, [game?.currentBall, cards, markedStates, handleMarkNumber]);
 
-  // 5. Polling para detectar si YA HAY UN GANADOR en el juego (Desempate)
+  // 7. Polling para detectar si YA HAY UN GANADOR en el juego (Desempate)
   useEffect(() => {
     if (game?.id && (game.state === 'RUNNING' || game.state === 'PAUSED' || game.state === 'FINISHED')) {
       const checkWinner = async () => {
@@ -205,33 +273,6 @@ export function MyCardsPage() {
       return () => clearInterval(interval);
     }
   }, [game?.id, game?.state]);
-
-  // 6. Función para CANTAR BINGO (con defensa de desempate)
-  const handleClaimBingo = useCallback(async (cardId: string) => {
-    if (gameHasWinner || showTooLateMessage) return;
-    
-    try {
-      const result = await cardRepository.claimBingo(cardId);
-      
-      if (result.alreadyWon) {
-        setShowTooLateMessage(true);
-      } else if (result.success) {
-        setGameHasWinner(true);
-        const req = await requestRepository.getRequestById((cards.find(c => c.id === cardId)?.requestId || ''));
-        if (req) setWinnerName(req.playerName);
-        
-        if (soundEnabledRef.current) {
-          const utterance = new SpeechSynthesisUtterance('¡Bingo! ¡Felicidades, tenemos un ganador!');
-          utterance.lang = 'es-CO';
-          utterance.volume = 1;
-          window.speechSynthesis.speak(utterance);
-        }
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
-      }
-    } catch (err) {
-      console.error('Error al reclamar Bingo:', err);
-    }
-  }, [gameHasWinner, showTooLateMessage, cards]);
 
   if (loading) {
     return <div style={{ padding: '2rem', textAlign: 'center', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Cargando tus cartones...</div>;
@@ -261,7 +302,6 @@ export function MyCardsPage() {
         @keyframes bingo-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
       `}</style>
 
-      {/* CABECERA FIJA CON LA BALOTA EN VIVO */}
       {game && (game.state === 'RUNNING' || game.state === 'PAUSED') && (
         <div style={{ 
           position: 'sticky', top: 0, zIndex: 50, 
@@ -294,7 +334,6 @@ export function MyCardsPage() {
         </div>
       )}
 
-      {/* LISTA VERTICAL DE CARTONES INTERACTIVOS */}
       <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '500px', margin: '0 auto' }}>
         {cards.map((card, index) => {
           const currentMarks = markedStates[card.id] || new Set<number>();
@@ -367,7 +406,6 @@ export function MyCardsPage() {
                 )}
               </div>
 
-              {/* BOTÓN DE CANTAR BINGO (Solo si aún no hay ganador) */}
               {!gameHasWinner && (
                 <button
                   onClick={() => handleClaimBingo(card.id)}
@@ -396,7 +434,6 @@ export function MyCardsPage() {
         })}
       </div>
 
-      {/* PANTALLA: TE FALTÓ RAPIDEZ */}
       {showTooLateMessage && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -411,9 +448,6 @@ export function MyCardsPage() {
           <p style={{ fontSize: '1.25rem', color: 'white', marginBottom: '2rem', fontWeight: 600, maxWidth: '400px' }}>
             Otro jugador presionó el botón de BINGO unos milisegundos antes que tú.
           </p>
-          <p style={{ fontSize: '1.5rem', color: '#FCBF49', fontWeight: 700, marginBottom: '2rem' }}>
-            ¡Suerte para la próxima! 🍀
-          </p>
           <button 
             onClick={() => window.location.hash = '#/'}
             style={{
@@ -427,7 +461,6 @@ export function MyCardsPage() {
         </div>
       )}
 
-      {/* PANTALLA: CELEBRACIÓN DE GANADOR */}
       {gameHasWinner && !showTooLateMessage && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -442,9 +475,6 @@ export function MyCardsPage() {
           </h1>
           <p style={{ fontSize: '1.5rem', color: 'white', zIndex: 1, fontWeight: 600, marginBottom: '1rem' }}>
             ¡Felicidades <strong style={{ fontSize: '1.75rem', color: '#0A1628' }}>{winnerName || 'Jugador'}</strong>!
-          </p>
-          <p style={{ fontSize: '1.125rem', color: 'white', zIndex: 1, opacity: 0.9, maxWidth: '400px' }}>
-            El administrador validará la victoria y se pondrá en contacto para la entrega del premio.
           </p>
         </div>
       )}
