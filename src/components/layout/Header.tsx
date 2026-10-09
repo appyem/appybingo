@@ -6,7 +6,7 @@ import styles from './Header.module.css';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isInstallable, isIOS, isAndroid, handleInstallClick } = useInstallPrompt();
+  const { isInstallable, handleInstallClick } = useInstallPrompt();
 
   return (
     <header className={styles.header}>
@@ -53,7 +53,7 @@ export function Header() {
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(252,191,73,0.5)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(252,191,73,0.3)'; }}
               >
-                {isIOS ? '📲 Agregar a Inicio' : (isAndroid ? '📲 Instalar App' : '📲 Descargar App')}
+                📲 Instalar App
               </button>
             )}
             <a href="#/admin/requests"><Button variant="ghost" size="sm">Admin</Button></a>
@@ -75,31 +75,6 @@ export function Header() {
             <a href="#partidas" className={styles.mobileNavLink}>Partidas</a>
             <a href="#mis-cartones" className={styles.mobileNavLink}>Mis Cartones</a>
             <div className={styles.mobileActions}>
-              {isInstallable && (
-                <button
-                  onClick={handleInstallClick}
-                  style={{
-                    width: '100%',
-                    background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
-                    color: '#0A1628',
-                    border: 'none',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '0.75rem 1rem',
-                    fontSize: '0.875rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    marginBottom: '0.5rem',
-                    transition: 'all 0.2s',
-                    boxShadow: '0 2px 8px rgba(252,191,73,0.3)'
-                  }}
-                >
-                  📲 Descargar App
-                </button>
-              )}
               <a href="#/admin/requests" style={{ width: '100%' }}><Button variant="ghost" size="sm" style={{ width: '100%' }}>Admin</Button></a>
               <a href="#solicitar" style={{ width: '100%' }}>
                 <Button variant="primary" size="sm" style={{ width: '100%' }}>Solicitar Carton</Button>
