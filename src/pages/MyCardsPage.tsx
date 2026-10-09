@@ -1,39 +1,90 @@
-import { useEffect, useState, useRef } from 'react';
-import { Button } from '../components/ui/Button';
-import { BingoCardDisplay } from '../components/bingo/BingoCardDisplay';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { cardRepository, gameRepository } from '../repositories';
-import { getBingoLetter, speakBingoNumber } from '../utils/bingo';
+import { speakBingoNumber } from '../utils/bingo';
 import type { Card, Game } from '@bingo-types/index';
 
+// Componente de Bola 3D Realista (Reutilizado)
+const BingoBall3D = ({ number, size = 80 }: { number: number; size?: number }) => {
+  const getBallColor = (letter: string) => {
+    switch (letter) {
+      case 'B': return '#E63946';
+      case 'I': return '#F77F00';
+      case 'N': return '#2A9D8F';
+      case 'G': return '#0077B6';
+      case 'O': return '#9B5DE5';
+      default: return '#8b5cf6';
+    }
+  };
+  
+  const getLetter = (num: number) => {
+    if (num <= 15) return 'B';
+    if (num <= 30) return 'I';
+    if (num <= 45) return 'N';
+    if (num <= 60) return 'G';
+    return 'O';
+  };
+
+  const letter = getLetter(number);
+  const color = getBallColor(letter);
+  
+  return (
+    <div style={{
+      width: `${size}px`, height: `${size}px`, borderRadius: '50%',
+      background: `radial-gradient(circle at 30% 30%, ${color} 0%, ${color}dd 40%, ${color}88 70%, #000000 100%)`,
+      boxShadow: `inset -${size * 0.15}px -${size * 0.15}px ${size * 0.3}px rgba(0,0,0,0.6), inset ${size * 0.1}px ${size * 0.1}px ${size * 0.2}px rgba(255,255,255,0.3), 0 ${size * 0.1}px ${size * 0.2}px rgba(0,0,0,0.4)`,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      position: 'relative', overflow: 'hidden', animation: 'bounce3d 2s ease-in-out infinite'
+    }}>
+      <div style={{ position: 'absolute', top: '10%', left: '15%', width: '40%', height: '25%', borderRadius: '50%', background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 100%)', transform: 'rotate(-30deg)', filter: 'blur(2px)' }} />
+      <div style={{ width: '65%', height: '55%', borderRadius: '50%', background: 'radial-gradient(circle at 50% 40%, #ffffff 0%, #f0f0f0 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)', position: 'relative', zIndex: 1 }}>
+        <span style={{ fontSize: `${size * 0.18}px`, fontWeight: 900, color: color, lineHeight: 1, fontFamily: 'Arial Black, sans-serif' }}>{letter}</span>
+        <span style={{ fontSize: `${size * 0.35}px`, fontWeight: 900, color: '#1a1a2e', lineHeight: 1, marginTop: '2px', fontFamily: 'Arial Black, sans-serif' }}>{number}</span>
+      </div>
+    </div>
+  );
+};
+
 export function MyCardsPage() {
+  const hash = window.location.hash;
+  const requestId = hash.startsWith('#/mis-cartones/') ? hash.replace('#/mis-cartones/', '').trim() : null;
+  
   const [cards, setCards] = useState<Card[]>([]);
-  const [loading, setLoading] = useState(true);
   const [game, setGame] = useState<Game | null>(null);
+  const [loading, setLoading] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(false);
+  
+  // Estado local para el marcado inmediato de cada cartón: { [cardId]: Set(numeros) }
+  const [markedStates, setMarkedStates] = useState<Record<string, Set<number>>>({});
+  const [invalidMark, setInvalidMark] = useState<string | null>(null); // Para feedback de error "shake"
   
   const prevBallRef = useRef<number | null>(null);
   const soundEnabledRef = useRef(soundEnabled);
 
   useEffect(() => {
-    const hash = window.location.hash;
-    let fetchPromise: Promise<Card[]>;
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
 
-    // Si hay un requestId en la URL (ej: #/mis-cartones/REQ-123), buscamos por ese ID directamente
-    if (hash.startsWith('#/mis-cartones/')) {
-      const requestId = hash.replace('#/mis-cartones/', '').trim();
+  useEffect(() => {
+    let fetchPromise: Promise<Card[]>;
+    let unsubscribeGame: (() => void) | undefined;
+
+    if (requestId) {
       fetchPromise = cardRepository.getCardsByRequestId(requestId);
     } else {
-      // Fallback: comportamiento anterior por playerId en sesión local
       const currentPlayerId = sessionStorage.getItem('currentDemoPlayerId') || 'player-2';
       fetchPromise = cardRepository.getCardsByPlayerId(currentPlayerId);
     }
 
-    let unsubscribeGame: (() => void) | undefined;
-
     fetchPromise.then(c => { 
-      setCards(c); 
+      setCards(c);
       
-      // Suscribirse al juego del primer cartón
+      // Inicializar estados marcados desde la BD
+      const initialMarks: Record<string, Set<number>> = {};
+      c.forEach(card => {
+        initialMarks[card.id] = new Set(card.markedNumbers || []);
+      });
+      setMarkedStates(initialMarks);
+      
       if (c.length > 0 && c[0].gameId) {
         const gameId = c[0].gameId;
         unsubscribeGame = gameRepository.subscribeToGame(gameId, (gameData) => {
@@ -48,14 +99,8 @@ export function MyCardsPage() {
       setLoading(false);
     });
 
-    return () => {
-      if (unsubscribeGame) unsubscribeGame();
-    };
-  }, []);
-
-  useEffect(() => {
-    soundEnabledRef.current = soundEnabled;
-  }, [soundEnabled]);
+    return () => { if (unsubscribeGame) unsubscribeGame(); };
+  }, [requestId]);
 
   useEffect(() => {
     if (game?.currentBall && game.currentBall !== prevBallRef.current) {
@@ -67,209 +112,160 @@ export function MyCardsPage() {
     }
   }, [game?.currentBall]);
 
-  if (loading) return <div style={{padding:'2rem',textAlign:'center', color:'var(--color-text-secondary)'}}>Cargando tus cartones...</div>;
+  const handleMarkNumber = useCallback(async (cardId: string, number: number) => {
+    const currentMarks = markedStates[cardId] || new Set<number>();
+    if (currentMarks.has(number)) return;
+    
+    // VALIDACIÓN CRÍTICA: Solo permitir marcar si la balota YA SALIÓ
+    const hasBeenDrawn = game?.drawnNumbers?.includes(number);
+    if (!hasBeenDrawn) {
+      setInvalidMark(`${cardId}-${number}`);
+      if (navigator.vibrate) navigator.vibrate(50);
+      setTimeout(() => setInvalidMark(null), 500);
+      return;
+    }
+
+    // Actualizar estado local inmediatamente para respuesta visual rápida
+    const newMarks = new Set(currentMarks);
+    newMarks.add(number);
+    setMarkedStates(prev => ({ ...prev, [cardId]: newMarks }));
+
+    // Guardar en la base de datos
+    try {
+      await cardRepository.markNumber(cardId, number);
+    } catch (err) {
+      console.error('Error al marcar número:', err);
+    }
+  }, [game?.drawnNumbers, markedStates]);
+
+  if (loading) {
+    return <div style={{ padding: '2rem', textAlign: 'center', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Cargando tus cartones...</div>;
+  }
+
+  if (cards.length === 0) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <h2 style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>No tienes cartones activos para esta solicitud.</h2>
+        <button onClick={() => window.location.hash = '#solicitar'} style={{ padding: '1rem 2rem', background: 'var(--color-primary)', color: 'white', borderRadius: 'var(--radius-lg)', fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+          Solicitar Nuevos Cartones
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div style={{padding: '2rem 1rem 4rem', maxWidth: '64rem', margin: '0 auto'}}>
-      <div style={{textAlign:'center', marginBottom:'2rem'}}>
-        <h1 style={{fontSize:'1.875rem', fontWeight:700, color:'white', marginBottom:'0.5rem'}}>Mis Cartones</h1>
-        <p style={{color:'var(--color-text-secondary)'}}>Tus cartones activos y el sorteo en tiempo real</p>
-      </div>
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg-base)', paddingBottom: '4rem' }}>
+      <style>{`
+        @keyframes bounce3d { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-15px) scale(1.05); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+      `}</style>
 
-      {/* ÁREA DE SORTEO INMERSIVA (Solo si hay juego y está en curso/pausado/finalizado) */}
-      {game && (game.state === 'RUNNING' || game.state === 'PAUSED' || game.state === 'FINISHED') && (
-        <div style={{
-          background: 'var(--color-bg-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-xl)',
-          padding: '2rem',
-          marginBottom: '2rem',
-          textAlign: 'center'
+      {/* 1. CABECERA FIJA CON LA BALOTA EN VIVO (Siempre visible) */}
+      {game && (game.state === 'RUNNING' || game.state === 'PAUSED') && (
+        <div style={{ 
+          position: 'sticky', top: 0, zIndex: 50, 
+          background: 'linear-gradient(135deg, rgba(26, 26, 36, 0.95) 0%, rgba(48, 43, 99, 0.95) 100%)',
+          borderBottom: '2px solid rgba(252, 191, 73, 0.3)',
+          padding: '1rem', textAlign: 'center',
+          backdropFilter: 'blur(10px)'
         }}>
-          {!soundEnabled && (game.state === 'RUNNING' || game.state === 'PAUSED') && (
-            <button
-              onClick={() => {
-                setSoundEnabled(true);
-                speakBingoNumber(game.currentBall || 1);
-              }}
-              style={{
-                width: '100%',
-                padding: '1rem',
-                marginBottom: '1.5rem',
-                background: 'var(--color-warning)',
-                color: 'black',
-                border: 'none',
-                borderRadius: 'var(--radius-lg)',
-                fontSize: '1rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem'
-              }}
-            >
-              🔊 Activar Sonido de la Sala (Necesario para escuchar las bolas)
+          {!soundEnabled && (
+            <button onClick={() => { setSoundEnabled(true); speakBingoNumber(game.currentBall || 1); }}
+              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'var(--color-warning)', color: 'black', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', cursor: 'pointer' }}>
+              🔊
             </button>
           )}
-
-          {(game.state === 'RUNNING' || game.state === 'PAUSED') ? (
-            <>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ 
-                  fontSize: '6rem', 
-                  fontWeight: 900, 
-                  color: 'var(--color-primary)', 
-                  lineHeight: 1,
-                  textShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                }}>
-                  {game.currentBall ? `${getBingoLetter(game.currentBall)} ${game.currentBall}` : '--'}
-                </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'white', marginTop: '0.5rem' }}>
-                  Bola Actual
-                </h3>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-                  Números sorteados: {game.drawnNumbers?.length || 0} / 75
-                </p>
-                {game.state === 'PAUSED' && (
-                  <p style={{ color: 'var(--color-warning)', fontSize: '0.875rem', marginTop: '1rem', fontWeight: 600 }}>
-                    ⏸️ El sorteo está pausado
-                  </p>
-                )}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            {game.currentBall ? (
+              <BingoBall3D number={game.currentBall} size={90} />
+            ) : (
+              <div style={{ width: '90px', height: '90px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '2px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: 'rgba(255,255,255,0.3)' }}>?</div>
+            )}
+            <div>
+              <div style={{ fontSize: '1rem', fontWeight: 800, color: 'white', textTransform: 'uppercase' }}>
+                {game.currentBall ? '¡Bola Actual!' : 'Esperando primera bola'}
               </div>
-
-              {game.drawnNumbers && game.drawnNumbers.length > 1 && (
-                <div style={{ marginBottom: '2rem', padding: '1rem', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Últimas bolas</div>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    {game.drawnNumbers.slice(-5).reverse().map((num, idx) => (
-                      <div key={num} style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        background: idx === 0 ? 'var(--color-bg-surface)' : 'var(--color-primary)',
-                        color: idx === 0 ? 'var(--color-text-secondary)' : 'white',
-                        border: `1px solid ${idx === 0 ? 'var(--color-border)' : 'var(--color-primary)'}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.875rem',
-                        fontWeight: 700
-                      }}>
-                        {num}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Tablero de control</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
-                  {['B', 'I', 'N', 'G', 'O'].map(letter => {
-                    const startNum = letter === 'B' ? 1 : letter === 'I' ? 16 : letter === 'N' ? 31 : letter === 'G' ? 46 : 61;
-                    return (
-                      <div key={letter}>
-                        <div style={{ 
-                          textAlign: 'center', 
-                          fontWeight: 900, 
-                          fontSize: '1.25rem', 
-                          color: 'var(--color-primary)', 
-                          marginBottom: '0.5rem',
-                          paddingBottom: '0.25rem',
-                          borderBottom: '2px solid var(--color-primary)'
-                        }}>
-                          {letter}
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          {Array.from({ length: 15 }, (_, i) => {
-                            const num = startNum + i;
-                            const isDrawn = game.drawnNumbers?.includes(num);
-                            return (
-                              <div key={num} style={{
-                                textAlign: 'center',
-                                padding: '0.25rem',
-                                fontSize: '0.75rem',
-                                background: isDrawn ? 'var(--color-primary)' : 'var(--color-bg-elevated)',
-                                color: isDrawn ? 'white' : 'var(--color-text-secondary)',
-                                borderRadius: '4px',
-                                fontWeight: isDrawn ? 700 : 400,
-                                transition: 'all 0.3s ease'
-                              }}>
-                                {num}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div style={{ fontSize: '0.875rem', color: '#FCBF49', fontWeight: 600 }}>
+                Sorteados: {game.drawnNumbers?.length || 0} / 75
               </div>
-            </>
-          ) : game.state === 'FINISHED' ? (
-            <>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🏆</div>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Sorteo Finalizado</h3>
-              <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
-                Se han sorteado los {game.drawnNumbers?.length || 0} números.
-              </p>
-            </>
-          ) : null}
+            </div>
+          </div>
         </div>
       )}
 
-      {cards.length === 0 ? (
-        <div style={{textAlign:'center', padding:'3rem', color:'var(--color-text-secondary)'}}>
-          <p>No tienes cartones asignados aún.</p>
-          <Button variant="primary" style={{marginTop:'1rem'}} onClick={() => window.location.hash = '#solicitar'}>Solicitar Cartones</Button>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '400px', margin: '0 auto' }}>
-          {cards.map((card, index) => (
-            <div 
-              key={card.id} 
-              style={{
-                background: 'var(--color-bg-surface)', 
-                border: '2px solid var(--color-border)', 
-                borderRadius: 'var(--radius-xl)', 
-                padding: '1.5rem', 
-                textAlign: 'center', 
-                transition: 'all 0.2s',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
-              }}
-            >
+      {/* 2. LISTA VERTICAL DE CARTONES INTERACTIVOS */}
+      <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '500px', margin: '0 auto' }}>
+        {cards.map((card, index) => {
+          const currentMarks = markedStates[card.id] || new Set<number>();
+          
+          return (
+            <div key={card.id} style={{ 
+              background: 'var(--color-bg-surface)', 
+              border: '2px solid var(--color-border)', 
+              borderRadius: 'var(--radius-xl)', 
+              padding: '1rem',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
+            }}>
               <div style={{ 
-                fontSize: '1.125rem', 
-                fontWeight: 800, 
-                color: 'var(--color-primary)', 
-                marginBottom: '1rem', 
-                fontFamily: 'monospace',
-                letterSpacing: '0.05em',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem'
+                fontSize: '1.125rem', fontWeight: 800, color: 'var(--color-primary)', 
+                marginBottom: '1rem', fontFamily: 'monospace', textAlign: 'center',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
               }}>
                 <span>🎟️</span> CARTÓN {index + 1}: {card.cardNumberFormatted}
               </div>
               
-              <div style={{ marginBottom: '1.5rem', opacity: 0.9 }}>
-                <BingoCardDisplay matrix={card.matrix} cardNumber={card.cardNumberFormatted} />
+              {/* Grilla 5x5 Interactiva */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
+                {['B', 'I', 'N', 'G', 'O'].map(letter => (
+                  <div key={letter} style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.25rem', color: letter === 'B' ? '#E63946' : letter === 'I' ? '#F77F00' : letter === 'N' ? '#2A9D8F' : letter === 'G' ? '#0077B6' : '#9B5DE5', paddingBottom: '0.5rem', borderBottom: `3px solid ${letter === 'B' ? '#E63946' : letter === 'I' ? '#F77F00' : letter === 'N' ? '#2A9D8F' : letter === 'G' ? '#0077B6' : '#9B5DE5'}` }}>
+                    {letter}
+                  </div>
+                ))}
+                
+                {card.matrix.map((row, rowIndex) => 
+                  row.map((cell, colIndex) => {
+                    const isFree = cell === 'FREE';
+                    const num = isFree ? null : (cell as number);
+                    const isMarked = isFree || (num !== null && currentMarks.has(num));
+                    const isInvalid = invalidMark === `${card.id}-${num}`;
+
+                    return (
+                      <div 
+                        key={`${rowIndex}-${colIndex}`}
+                        onClick={() => {
+                          if (!isFree && num !== null && !isMarked) {
+                            handleMarkNumber(card.id, num);
+                          }
+                        }}
+                        style={{
+                          aspectRatio: '1',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: isMarked ? 'var(--color-success)' : 'var(--color-bg-elevated)',
+                          color: isMarked ? 'white' : (isFree ? '#0A1628' : 'white'),
+                          borderRadius: '8px',
+                          fontWeight: 800,
+                          fontSize: isFree ? '0.7rem' : '1.1rem',
+                          border: isInvalid ? '2px solid var(--color-error)' : (isFree ? 'none' : '1px solid var(--color-border)'),
+                          cursor: isFree || isMarked ? 'default' : 'pointer',
+                          transition: 'all 0.2s',
+                          userSelect: 'none',
+                          animation: isInvalid ? 'shake 0.5s' : 'none',
+                          position: 'relative'
+                        }}
+                      >
+                        {isFree ? 'FREE' : cell}
+                        {isMarked && !isFree && (
+                          <div style={{ position: 'absolute', fontSize: '1.5rem', opacity: 0.8 }}>✓</div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
-              
-              <Button 
-                variant="primary" 
-                size="md" 
-                onClick={() => window.location.hash = '#/carton/' + card.id}
-                style={{ width: '100%', fontWeight: 700 }}
-              >
-                Abrir en Pantalla Completa
-              </Button>
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }
