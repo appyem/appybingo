@@ -61,6 +61,11 @@ export function MyCardsPage() {
   const [winnerName, setWinnerName] = useState<string>('');
   const [showTooLateMessage, setShowTooLateMessage] = useState(false);
   
+  
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
+  };
+
   const prevBallRef = useRef<number | null>(null);
   const soundEnabledRef = useRef(soundEnabled);
   const autoMarkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -300,6 +305,20 @@ export function MyCardsPage() {
         }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes bingo-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        @keyframes confetti-fall {
+          0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        @keyframes confetti-shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-50px); }
+          75% { transform: translateX(50px); }
+        }
+        @keyframes trophy-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.2); }
+        }
+
       `}</style>
 
       {game && (game.state === 'RUNNING' || game.state === 'PAUSED') && (
@@ -437,24 +456,48 @@ export function MyCardsPage() {
       {showTooLateMessage && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0, 0, 0, 0.95)',
+          background: 'rgba(10, 22, 40, 0.98)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           zIndex: 400, animation: 'fadeIn 0.5s ease-out', padding: '2rem', textAlign: 'center'
         }}>
-          <div style={{ fontSize: '5rem', marginBottom: '1rem', animation: 'shake 0.5s' }}>⏱️</div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#E63946', marginBottom: '1rem', textShadow: '0 4px 8px rgba(0,0,0,0.5)' }}>
+          <div style={{ fontSize: '5rem', marginBottom: '1.5rem', animation: 'shake 0.5s', filter: 'grayscale(0.3)' }}>⏱️</div>
+          <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#E63946', marginBottom: '1rem', textShadow: '0 4px 12px rgba(230,57,70,0.5)' }}>
             ¡Te faltó rapidez!
           </h1>
-          <p style={{ fontSize: '1.25rem', color: 'white', marginBottom: '2rem', fontWeight: 600, maxWidth: '400px' }}>
-            Otro jugador presionó el botón de BINGO unos milisegundos antes que tú.
+          <div style={{ 
+            padding: '1.5rem 2rem', 
+            background: 'rgba(255,255,255,0.05)', 
+            borderRadius: 'var(--radius-xl)', 
+            marginBottom: '2rem',
+            maxWidth: '450px',
+            border: '1px solid rgba(230,57,70,0.3)'
+          }}>
+            <p style={{ fontSize: '1.125rem', color: '#d4d4e8', marginBottom: '1rem', lineHeight: 1.6, fontWeight: 500 }}>
+              Otro jugador cantó <strong style={{ color: '#FCBF49' }}>BINGO</strong> unos milisegundos antes que tú.
+            </p>
+            <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+              El premio de <strong style={{ color: '#FCBF49' }}>{game?.prizeValue ? formatCurrency(game.prizeValue) : 'esta partida'}</strong> ya tiene dueño.
+            </p>
+          </div>
+          <p style={{ fontSize: '1.25rem', color: '#FCBF49', fontWeight: 700, marginBottom: '2rem', maxWidth: '400px' }}>
+            ¡No te desanimes! La suerte puede estar de tu lado en la próxima partida. 🍀
           </p>
           <button 
             onClick={() => window.location.hash = '#/'}
             style={{
-              padding: '1rem 2.5rem', background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
-              color: '#0A1628', border: 'none', borderRadius: '9999px', fontSize: '1.125rem',
-              fontWeight: 800, cursor: 'pointer', boxShadow: '0 10px 30px rgba(252,191,73,0.4)'
+              padding: '1rem 2.5rem', 
+              background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
+              color: '#0A1628', 
+              border: 'none', 
+              borderRadius: '9999px', 
+              fontSize: '1.125rem',
+              fontWeight: 800, 
+              cursor: 'pointer', 
+              boxShadow: '0 10px 30px rgba(252,191,73,0.4)',
+              transition: 'all 0.3s ease'
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
           >
             Volver al Inicio
           </button>
