@@ -56,9 +56,11 @@ export function MyCardsPage() {
   // Estado local para el marcado inmediato de cada cartón: { [cardId]: Set(numeros) }
   const [markedStates, setMarkedStates] = useState<Record<string, Set<number>>>({});
   const [invalidMark, setInvalidMark] = useState<string | null>(null); // Para feedback de error "shake"
+  const [pendingAutoMark, setPendingAutoMark] = useState<string | null>(null); // cardId-number pendiente de auto-marcarse
   
   const prevBallRef = useRef<number | null>(null);
   const soundEnabledRef = useRef(soundEnabled);
+  const autoMarkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
@@ -99,24 +101,16 @@ export function MyCardsPage() {
       setLoading(false);
     });
 
-    return () => { if (unsubscribeGame) unsubscribeGame(); };
+    return () => { 
+      if (unsubscribeGame) unsubscribeGame();
+      if (autoMarkTimerRef.current) clearTimeout(autoMarkTimerRef.current);
+    };
   }, [requestId]);
-
-  useEffect(() => {
-    if (game?.currentBall && game.currentBall !== prevBallRef.current) {
-      if (soundEnabledRef.current) {
-        speakBingoNumber(game.currentBall);
-        if (navigator.vibrate) navigator.vibrate(200);
-      }
-      prevBallRef.current = game.currentBall;
-    }
-  }, [game?.currentBall]);
 
   const handleMarkNumber = useCallback(async (cardId: string, number: number) => {
     const currentMarks = markedStates[cardId] || new Set<number>();
     if (currentMarks.has(number)) return;
     
-    // VALIDACIÓN CRÍTICA: Solo permitir marcar si la balota YA SALIÓ
     const hasBeenDrawn = game?.drawnNumbers?.includes(number);
     if (!hasBeenDrawn) {
       setInvalidMark(`${cardId}-${number}`);
@@ -125,18 +119,61 @@ export function MyCardsPage() {
       return;
     }
 
-    // Actualizar estado local inmediatamente para respuesta visual rápida
+    // Cancelar auto-marcado si el usuario marca manualmente
+    if (pendingAutoMark === `${cardId}-${number}`) {
+      if (autoMarkTimerRef.current) {
+        clearTimeout(autoMarkTimerRef.current);
+        autoMarkTimerRef.current = null;
+      }
+      setPendingAutoMark(null);
+    }
+
     const newMarks = new Set(currentMarks);
     newMarks.add(number);
     setMarkedStates(prev => ({ ...prev, [cardId]: newMarks }));
 
-    // Guardar en la base de datos
     try {
       await cardRepository.markNumber(cardId, number);
     } catch (err) {
       console.error('Error al marcar número:', err);
     }
-  }, [game?.drawnNumbers, markedStates]);
+  }, [game?.drawnNumbers, markedStates, pendingAutoMark]);
+
+  // Efecto para sonido y auto-marcado
+  useEffect(() => {
+    if (game?.currentBall && game.currentBall !== prevBallRef.current) {
+      const ball = game.currentBall;
+      
+      if (soundEnabledRef.current) {
+        speakBingoNumber(ball);
+        if (navigator.vibrate) navigator.vibrate(200);
+      }
+      prevBallRef.current = ball;
+
+      // Lógica de auto-marcado
+      const cardWithBall = cards.find(card => {
+        const isInMatrix = card.matrix.some(row => row.includes(ball));
+        const currentMarks = markedStates[card.id] || new Set<number>();
+        return isInMatrix && !currentMarks.has(ball);
+      });
+
+      if (cardWithBall) {
+        const pendingKey = `${cardWithBall.id}-${ball}`;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setPendingAutoMark(pendingKey);
+
+        if (autoMarkTimerRef.current) {
+          clearTimeout(autoMarkTimerRef.current);
+        }
+
+        autoMarkTimerRef.current = setTimeout(() => {
+          handleMarkNumber(cardWithBall.id, ball);
+          setPendingAutoMark(null);
+          autoMarkTimerRef.current = null;
+        }, 6000);
+      }
+    }
+  }, [game?.currentBall, cards, markedStates, handleMarkNumber]);
 
   if (loading) {
     return <div style={{ padding: '2rem', textAlign: 'center', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Cargando tus cartones...</div>;
@@ -158,6 +195,10 @@ export function MyCardsPage() {
       <style>{`
         @keyframes bounce3d { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-15px) scale(1.05); } }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        @keyframes pulse-border {
+          0%, 100% { border-color: var(--color-warning); box-shadow: 0 0 0 0 rgba(252, 191, 73, 0.4); }
+          50% { border-color: #FCBF49; box-shadow: 0 0 0 4px rgba(252, 191, 73, 0); }
+        }
       `}</style>
 
       {/* 1. CABECERA FIJA CON LA BALOTA EN VIVO (Siempre visible) */}
@@ -228,6 +269,7 @@ export function MyCardsPage() {
                     const num = isFree ? null : (cell as number);
                     const isMarked = isFree || (num !== null && currentMarks.has(num));
                     const isInvalid = invalidMark === `${card.id}-${num}`;
+                    const isPendingAuto = pendingAutoMark === `${card.id}-${num}`;
 
                     return (
                       <div 
@@ -240,22 +282,33 @@ export function MyCardsPage() {
                         style={{
                           aspectRatio: '1',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: isMarked ? 'var(--color-success)' : 'var(--color-bg-elevated)',
+                          background: isMarked ? 'var(--color-success)' : (isPendingAuto ? 'rgba(252, 191, 73, 0.2)' : 'var(--color-bg-elevated)'),
                           color: isMarked ? 'white' : (isFree ? '#0A1628' : 'white'),
                           borderRadius: '8px',
                           fontWeight: 800,
                           fontSize: isFree ? '0.7rem' : '1.1rem',
-                          border: isInvalid ? '2px solid var(--color-error)' : (isFree ? 'none' : '1px solid var(--color-border)'),
+                          border: isInvalid ? '2px solid var(--color-error)' : (isPendingAuto ? '2px solid var(--color-warning)' : (isFree ? 'none' : '1px solid var(--color-border)')),
                           cursor: isFree || isMarked ? 'default' : 'pointer',
                           transition: 'all 0.2s',
                           userSelect: 'none',
-                          animation: isInvalid ? 'shake 0.5s' : 'none',
+                          animation: isInvalid ? 'shake 0.5s' : (isPendingAuto ? 'pulse-border 1s infinite' : 'none'),
                           position: 'relative'
                         }}
                       >
                         {isFree ? 'FREE' : cell}
                         {isMarked && !isFree && (
                           <div style={{ position: 'absolute', fontSize: '1.5rem', opacity: 0.8 }}>✓</div>
+                        )}
+                        {isPendingAuto && (
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '2px',
+                            fontSize: '0.5rem',
+                            color: 'var(--color-warning)',
+                            fontWeight: 700
+                          }}>
+                            ¡TOCA!
+                          </div>
                         )}
                       </div>
                     );
