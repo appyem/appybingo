@@ -3,7 +3,7 @@ import { cardRepository, gameRepository } from '../repositories';
 import { speakBingoNumber } from '../utils/bingo';
 import type { Card, Game } from '@bingo-types/index';
 
-// Componente de Bola 3D Realista (Reutilizado)
+// Componente de Bola 3D Realista
 const BingoBall3D = ({ number, size = 80 }: { number: number; size?: number }) => {
   const getBallColor = (letter: string) => {
     switch (letter) {
@@ -53,19 +53,16 @@ export function MyCardsPage() {
   const [loading, setLoading] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(false);
   
-  // Estado local para el marcado inmediato de cada cartón: { [cardId]: Set(numeros) }
   const [markedStates, setMarkedStates] = useState<Record<string, Set<number>>>({});
-  const [invalidMark, setInvalidMark] = useState<string | null>(null); // Para feedback de error "shake"
-  const [pendingAutoMark, setPendingAutoMark] = useState<string | null>(null); // cardId-number pendiente de auto-marcarse
+  const [invalidMark, setInvalidMark] = useState<string | null>(null);
+  // Usamos un Set para rastrear múltiples cartones pendientes de auto-marcado simultáneamente
+  const [pendingAutoMarks, setPendingAutoMarks] = useState<Set<string>>(new Set());
   
   const prevBallRef = useRef<number | null>(null);
   const soundEnabledRef = useRef(soundEnabled);
   const autoMarkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    soundEnabledRef.current = soundEnabled;
-  }, [soundEnabled]);
-
+  // 1. Carga de datos
   useEffect(() => {
     let fetchPromise: Promise<Card[]>;
     let unsubscribeGame: (() => void) | undefined;
@@ -79,8 +76,6 @@ export function MyCardsPage() {
 
     fetchPromise.then(c => { 
       setCards(c);
-      
-      // Inicializar estados marcados desde la BD
       const initialMarks: Record<string, Set<number>> = {};
       c.forEach(card => {
         initialMarks[card.id] = new Set(card.markedNumbers || []);
@@ -90,9 +85,7 @@ export function MyCardsPage() {
       if (c.length > 0 && c[0].gameId) {
         const gameId = c[0].gameId;
         unsubscribeGame = gameRepository.subscribeToGame(gameId, (gameData) => {
-          if (gameData) {
-            setGame(gameData);
-          }
+          if (gameData) setGame(gameData);
         });
       }
       setLoading(false); 
@@ -107,6 +100,7 @@ export function MyCardsPage() {
     };
   }, [requestId]);
 
+  // 2. Función de marcado (Declarada PRIMERO para evitar errores de referencia)
   const handleMarkNumber = useCallback(async (cardId: string, number: number) => {
     const currentMarks = markedStates[cardId] || new Set<number>();
     if (currentMarks.has(number)) return;
@@ -119,14 +113,20 @@ export function MyCardsPage() {
       return;
     }
 
-    // Cancelar auto-marcado si el usuario marca manualmente
-    if (pendingAutoMark === `${cardId}-${number}`) {
-      if (autoMarkTimerRef.current) {
-        clearTimeout(autoMarkTimerRef.current);
-        autoMarkTimerRef.current = null;
+    // Si el usuario marca manualmente, quitar de pendientes y cancelar timer si ya no hay pendientes
+    setPendingAutoMarks(prev => {
+      const pendingKey = `${cardId}-${number}`;
+      if (prev.has(pendingKey)) {
+        const next = new Set(prev);
+        next.delete(pendingKey);
+        if (next.size === 0 && autoMarkTimerRef.current) {
+          clearTimeout(autoMarkTimerRef.current);
+          autoMarkTimerRef.current = null;
+        }
+        return next;
       }
-      setPendingAutoMark(null);
-    }
+      return prev;
+    });
 
     const newMarks = new Set(currentMarks);
     newMarks.add(number);
@@ -137,9 +137,9 @@ export function MyCardsPage() {
     } catch (err) {
       console.error('Error al marcar número:', err);
     }
-  }, [game?.drawnNumbers, markedStates, pendingAutoMark]);
+  }, [game?.drawnNumbers, markedStates]);
 
-  // Efecto para sonido y auto-marcado
+  // 3. Efecto para sonido y AUTO-MARCADO MULTIPLE
   useEffect(() => {
     if (game?.currentBall && game.currentBall !== prevBallRef.current) {
       const ball = game.currentBall;
@@ -150,25 +150,32 @@ export function MyCardsPage() {
       }
       prevBallRef.current = ball;
 
-      // Lógica de auto-marcado
-      const cardWithBall = cards.find(card => {
+      // ENCONTRAR TODOS los cartones que tienen este número y no lo han marcado (usando filter, no find)
+      const cardsNeedingMark = cards.filter(card => {
         const isInMatrix = card.matrix.some(row => row.includes(ball));
         const currentMarks = markedStates[card.id] || new Set<number>();
         return isInMatrix && !currentMarks.has(ball);
       });
 
-      if (cardWithBall) {
-        const pendingKey = `${cardWithBall.id}-${ball}`;
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setPendingAutoMark(pendingKey);
-
+      if (cardsNeedingMark.length > 0) {
         if (autoMarkTimerRef.current) {
           clearTimeout(autoMarkTimerRef.current);
         }
 
+        // Agregar TODOS los cartones pendientes visualmente
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setPendingAutoMarks(prev => {
+          const next = new Set(prev);
+          cardsNeedingMark.forEach(card => next.add(`${card.id}-${ball}`));
+          return next;
+        });
+
+        // Programar auto-marcado para TODOS los cartones afectados después de 6 segundos
         autoMarkTimerRef.current = setTimeout(() => {
-          handleMarkNumber(cardWithBall.id, ball);
-          setPendingAutoMark(null);
+          cardsNeedingMark.forEach(card => {
+            handleMarkNumber(card.id, ball);
+          });
+          setPendingAutoMarks(new Set()); // Limpiar pendientes
           autoMarkTimerRef.current = null;
         }, 6000);
       }
@@ -201,7 +208,7 @@ export function MyCardsPage() {
         }
       `}</style>
 
-      {/* 1. CABECERA FIJA CON LA BALOTA EN VIVO (Siempre visible) */}
+      {/* CABECERA FIJA CON LA BALOTA EN VIVO */}
       {game && (game.state === 'RUNNING' || game.state === 'PAUSED') && (
         <div style={{ 
           position: 'sticky', top: 0, zIndex: 50, 
@@ -234,7 +241,7 @@ export function MyCardsPage() {
         </div>
       )}
 
-      {/* 2. LISTA VERTICAL DE CARTONES INTERACTIVOS */}
+      {/* LISTA VERTICAL DE CARTONES INTERACTIVOS */}
       <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '500px', margin: '0 auto' }}>
         {cards.map((card, index) => {
           const currentMarks = markedStates[card.id] || new Set<number>();
@@ -255,7 +262,6 @@ export function MyCardsPage() {
                 <span>🎟️</span> CARTÓN {index + 1}: {card.cardNumberFormatted}
               </div>
               
-              {/* Grilla 5x5 Interactiva */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
                 {['B', 'I', 'N', 'G', 'O'].map(letter => (
                   <div key={letter} style={{ textAlign: 'center', fontWeight: 900, fontSize: '1.25rem', color: letter === 'B' ? '#E63946' : letter === 'I' ? '#F77F00' : letter === 'N' ? '#2A9D8F' : letter === 'G' ? '#0077B6' : '#9B5DE5', paddingBottom: '0.5rem', borderBottom: `3px solid ${letter === 'B' ? '#E63946' : letter === 'I' ? '#F77F00' : letter === 'N' ? '#2A9D8F' : letter === 'G' ? '#0077B6' : '#9B5DE5'}` }}>
@@ -269,7 +275,7 @@ export function MyCardsPage() {
                     const num = isFree ? null : (cell as number);
                     const isMarked = isFree || (num !== null && currentMarks.has(num));
                     const isInvalid = invalidMark === `${card.id}-${num}`;
-                    const isPendingAuto = pendingAutoMark === `${card.id}-${num}`;
+                    const isPendingAuto = pendingAutoMarks.has(`${card.id}-${num}`);
 
                     return (
                       <div 
