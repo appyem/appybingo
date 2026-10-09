@@ -62,6 +62,10 @@ export function MyCardsPage() {
   const soundEnabledRef = useRef(soundEnabled);
   const autoMarkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
   // 1. Carga de datos
   useEffect(() => {
     let fetchPromise: Promise<Card[]>;
