@@ -1,0 +1,23 @@
+{
+  "name": "AppyBingo - Bingo en Vivo",
+  "short_name": "AppyBingo",
+  "description": "La plataforma de Bingo 75 bolas más moderna, segura y fácil de usar.",
+  "start_url": "/#/solicitar",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
