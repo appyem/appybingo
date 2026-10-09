@@ -177,41 +177,69 @@
 }
 
 .bingoBall {
-  width: 2rem;
-  height: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 900;
   color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
   animation: bounce 2s ease-in-out infinite;
+  box-shadow: 
+    inset -4px -4px 8px rgba(0, 0, 0, 0.4),
+    inset 2px 2px 4px rgba(255, 255, 255, 0.2),
+    0 6px 12px rgba(0, 0, 0, 0.5);
+}
+
+.bingoBall::before {
+  content: '';
+  position: absolute;
+  top: 15%;
+  left: 20%;
+  width: 35%;
+  height: 25%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 100%);
+  transform: rotate(-30deg);
+  filter: blur(1px);
+}
+
+.bingoBall::after {
+  content: '';
+  position: absolute;
+  bottom: 10%;
+  right: 15%;
+  width: 20%;
+  height: 15%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 100%);
 }
 
 .ballB {
-  background: linear-gradient(135deg, #E63946, #c92b38);
+  background: radial-gradient(circle at 30% 30%, #ff4d5a 0%, #E63946 40%, #a82832 100%);
   animation-delay: 0s;
 }
 
 .ballI {
-  background: linear-gradient(135deg, #F77F00, #e06f00);
+  background: radial-gradient(circle at 30% 30%, #ffa033 0%, #F77F00 40%, #b35e00 100%);
   animation-delay: 0.2s;
 }
 
 .ballN {
-  background: linear-gradient(135deg, #2A9D8F, #1f7a6f);
+  background: radial-gradient(circle at 30% 30%, #3dbfb0 0%, #2A9D8F 40%, #1a6b60 100%);
   animation-delay: 0.4s;
 }
 
 .ballG {
-  background: linear-gradient(135deg, #0077B6, #005a8a);
+  background: radial-gradient(circle at 30% 30%, #0099e6 0%, #0077B6 40%, #004d7a 100%);
   animation-delay: 0.6s;
 }
 
 .ballO {
-  background: linear-gradient(135deg, #9B5DE5, #7a3fc4);
+  background: radial-gradient(circle at 30% 30%, #b877f0 0%, #9B5DE5 40%, #6a33a8 100%);
   animation-delay: 0.8s;
 }
 
