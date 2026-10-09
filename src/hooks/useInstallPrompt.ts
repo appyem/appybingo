@@ -68,7 +68,8 @@ export function useInstallPrompt() {
   };
 
   // Garantizamos que el botón se muestre en CUALQUIER móvil si no está instalado
-  const isInstallable = isMobile && !isInstalled;
+  // TEMPORAL: Forzado a true para diagnóstico de renderizado
+  const isInstallable = true;
 
   return { isInstallable, isInstalled, isIOS, isAndroid, handleInstallClick };
 }

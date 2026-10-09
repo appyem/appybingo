@@ -36,8 +36,8 @@ export function Header() {
                 onClick={handleInstallClick}
                 style={{
                   background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
+                  border: '3px solid red', // TEMPORAL: Diagnóstico
                   color: '#0A1628',
-                  border: 'none',
                   borderRadius: 'var(--radius-md)',
                   padding: '0.5rem 1rem',
                   fontSize: '0.875rem',
@@ -53,7 +53,7 @@ export function Header() {
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(252,191,73,0.5)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(252,191,73,0.3)'; }}
               >
-                {isIOS ? '📲 Agregar a Inicio' : (isAndroid ? '📲 Instalar App' : '📲 Descargar')}
+                '🚨 BOTÓN DE PRUEBA 🚨'
               </button>
             )}
             <a href="#/admin/requests"><Button variant="ghost" size="sm">Admin</Button></a>
