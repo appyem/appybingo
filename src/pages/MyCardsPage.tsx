@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { cardRepository, gameRepository } from '../repositories';
+import { cardRepository, gameRepository, requestRepository } from '../repositories';
 import { speakBingoNumber } from '../utils/bingo';
 import type { Card, Game } from '@bingo-types/index';
 
@@ -55,16 +55,16 @@ export function MyCardsPage() {
   
   const [markedStates, setMarkedStates] = useState<Record<string, Set<number>>>({});
   const [invalidMark, setInvalidMark] = useState<string | null>(null);
-  // Usamos un Set para rastrear múltiples cartones pendientes de auto-marcado simultáneamente
   const [pendingAutoMarks, setPendingAutoMarks] = useState<Set<string>>(new Set());
+  
+  // Estados para la lógica de Bingo y desempate
+  const [gameHasWinner, setGameHasWinner] = useState(false);
+  const [winnerName, setWinnerName] = useState<string>('');
+  const [showTooLateMessage, setShowTooLateMessage] = useState(false);
   
   const prevBallRef = useRef<number | null>(null);
   const soundEnabledRef = useRef(soundEnabled);
   const autoMarkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    soundEnabledRef.current = soundEnabled;
-  }, [soundEnabled]);
 
   // 1. Carga de datos
   useEffect(() => {
@@ -104,7 +104,12 @@ export function MyCardsPage() {
     };
   }, [requestId]);
 
-  // 2. Función de marcado (Declarada PRIMERO para evitar errores de referencia)
+  // 2. Sincronización de sonido
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  // 3. Función de marcado manual
   const handleMarkNumber = useCallback(async (cardId: string, number: number) => {
     const currentMarks = markedStates[cardId] || new Set<number>();
     if (currentMarks.has(number)) return;
@@ -117,7 +122,7 @@ export function MyCardsPage() {
       return;
     }
 
-    // Si el usuario marca manualmente, quitar de pendientes y cancelar timer si ya no hay pendientes
+    // Si el usuario marca manualmente, quitar de pendientes y cancelar timer
     setPendingAutoMarks(prev => {
       const pendingKey = `${cardId}-${number}`;
       if (prev.has(pendingKey)) {
@@ -143,7 +148,7 @@ export function MyCardsPage() {
     }
   }, [game?.drawnNumbers, markedStates]);
 
-  // 3. Efecto para sonido y AUTO-MARCADO MULTIPLE
+  // 4. Efecto para sonido y AUTO-MARCADO MÚLTIPLE
   useEffect(() => {
     if (game?.currentBall && game.currentBall !== prevBallRef.current) {
       const ball = game.currentBall;
@@ -154,7 +159,6 @@ export function MyCardsPage() {
       }
       prevBallRef.current = ball;
 
-      // ENCONTRAR TODOS los cartones que tienen este número y no lo han marcado (usando filter, no find)
       const cardsNeedingMark = cards.filter(card => {
         const isInMatrix = card.matrix.some(row => row.includes(ball));
         const currentMarks = markedStates[card.id] || new Set<number>();
@@ -166,7 +170,6 @@ export function MyCardsPage() {
           clearTimeout(autoMarkTimerRef.current);
         }
 
-        // Agregar TODOS los cartones pendientes visualmente
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setPendingAutoMarks(prev => {
           const next = new Set(prev);
@@ -174,17 +177,61 @@ export function MyCardsPage() {
           return next;
         });
 
-        // Programar auto-marcado para TODOS los cartones afectados después de 6 segundos
         autoMarkTimerRef.current = setTimeout(() => {
           cardsNeedingMark.forEach(card => {
             handleMarkNumber(card.id, ball);
           });
-          setPendingAutoMarks(new Set()); // Limpiar pendientes
+          setPendingAutoMarks(new Set());
           autoMarkTimerRef.current = null;
         }, 6000);
       }
     }
   }, [game?.currentBall, cards, markedStates, handleMarkNumber]);
+
+  // 5. Polling para detectar si YA HAY UN GANADOR en el juego (Desempate)
+  useEffect(() => {
+    if (game?.id && (game.state === 'RUNNING' || game.state === 'PAUSED' || game.state === 'FINISHED')) {
+      const checkWinner = async () => {
+        const allCards = await cardRepository.getCards();
+        const winningCard = allCards.find(c => c.gameId === game.id && c.status === 'WINNER');
+        if (winningCard) {
+          setGameHasWinner(true);
+          const req = await requestRepository.getRequestById(winningCard.requestId);
+          if (req) setWinnerName(req.playerName);
+        }
+      };
+      checkWinner();
+      const interval = setInterval(checkWinner, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [game?.id, game?.state]);
+
+  // 6. Función para CANTAR BINGO (con defensa de desempate)
+  const handleClaimBingo = useCallback(async (cardId: string) => {
+    if (gameHasWinner || showTooLateMessage) return;
+    
+    try {
+      const result = await cardRepository.claimBingo(cardId);
+      
+      if (result.alreadyWon) {
+        setShowTooLateMessage(true);
+      } else if (result.success) {
+        setGameHasWinner(true);
+        const req = await requestRepository.getRequestById((cards.find(c => c.id === cardId)?.requestId || ''));
+        if (req) setWinnerName(req.playerName);
+        
+        if (soundEnabledRef.current) {
+          const utterance = new SpeechSynthesisUtterance('¡Bingo! ¡Felicidades, tenemos un ganador!');
+          utterance.lang = 'es-CO';
+          utterance.volume = 1;
+          window.speechSynthesis.speak(utterance);
+        }
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+      }
+    } catch (err) {
+      console.error('Error al reclamar Bingo:', err);
+    }
+  }, [gameHasWinner, showTooLateMessage, cards]);
 
   if (loading) {
     return <div style={{ padding: '2rem', textAlign: 'center', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Cargando tus cartones...</div>;
@@ -210,6 +257,8 @@ export function MyCardsPage() {
           0%, 100% { border-color: var(--color-warning); box-shadow: 0 0 0 0 rgba(252, 191, 73, 0.4); }
           50% { border-color: #FCBF49; box-shadow: 0 0 0 4px rgba(252, 191, 73, 0); }
         }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes bingo-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
       `}</style>
 
       {/* CABECERA FIJA CON LA BALOTA EN VIVO */}
@@ -310,25 +359,95 @@ export function MyCardsPage() {
                           <div style={{ position: 'absolute', fontSize: '1.5rem', opacity: 0.8 }}>✓</div>
                         )}
                         {isPendingAuto && (
-                          <div style={{
-                            position: 'absolute',
-                            bottom: '2px',
-                            fontSize: '0.5rem',
-                            color: 'var(--color-warning)',
-                            fontWeight: 700
-                          }}>
-                            ¡TOCA!
-                          </div>
+                          <div style={{ position: 'absolute', bottom: '2px', fontSize: '0.5rem', color: 'var(--color-warning)', fontWeight: 700 }}>¡TOCA!</div>
                         )}
                       </div>
                     );
                   })
                 )}
               </div>
+
+              {/* BOTÓN DE CANTAR BINGO (Solo si aún no hay ganador) */}
+              {!gameHasWinner && (
+                <button
+                  onClick={() => handleClaimBingo(card.id)}
+                  style={{
+                    marginTop: '1.5rem',
+                    width: '100%',
+                    padding: '1rem',
+                    background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
+                    color: '#0A1628',
+                    fontWeight: 900,
+                    fontSize: '1.25rem',
+                    border: 'none',
+                    borderRadius: 'var(--radius-lg)',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(252,191,73,0.4)',
+                    animation: 'pulse-border 1.5s infinite',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}
+                >
+                  🎉 ¡Cantar Bingo con este cartón! 🎉
+                </button>
+              )}
             </div>
           );
         })}
       </div>
+
+      {/* PANTALLA: TE FALTÓ RAPIDEZ */}
+      {showTooLateMessage && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.95)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          zIndex: 400, animation: 'fadeIn 0.5s ease-out', padding: '2rem', textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '5rem', marginBottom: '1rem', animation: 'shake 0.5s' }}>⏱️</div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#E63946', marginBottom: '1rem', textShadow: '0 4px 8px rgba(0,0,0,0.5)' }}>
+            ¡Te faltó rapidez!
+          </h1>
+          <p style={{ fontSize: '1.25rem', color: 'white', marginBottom: '2rem', fontWeight: 600, maxWidth: '400px' }}>
+            Otro jugador presionó el botón de BINGO unos milisegundos antes que tú.
+          </p>
+          <p style={{ fontSize: '1.5rem', color: '#FCBF49', fontWeight: 700, marginBottom: '2rem' }}>
+            ¡Suerte para la próxima! 🍀
+          </p>
+          <button 
+            onClick={() => window.location.hash = '#/'}
+            style={{
+              padding: '1rem 2.5rem', background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
+              color: '#0A1628', border: 'none', borderRadius: '9999px', fontSize: '1.125rem',
+              fontWeight: 800, cursor: 'pointer', boxShadow: '0 10px 30px rgba(252,191,73,0.4)'
+            }}
+          >
+            Volver al Inicio
+          </button>
+        </div>
+      )}
+
+      {/* PANTALLA: CELEBRACIÓN DE GANADOR */}
+      {gameHasWinner && !showTooLateMessage && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 50%, #E63946 100%)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          zIndex: 300, animation: 'fadeIn 0.5s ease-out', overflow: 'hidden', padding: '2rem', textAlign: 'center'
+        }}>
+          <img src="/logo.png" alt="AppyBingo" style={{ position: 'absolute', width: '80%', maxWidth: '500px', opacity: 0.15, transform: 'rotate(-15deg)', pointerEvents: 'none' }} />
+          <div style={{ fontSize: '6rem', marginBottom: '1rem', animation: 'bingo-bounce 0.6s infinite', zIndex: 1 }}>🏆</div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'white', textShadow: '0 4px 8px rgba(0,0,0,0.3)', marginBottom: '0.5rem', zIndex: 1 }}>
+            ¡TENEMOS UN GANADOR!
+          </h1>
+          <p style={{ fontSize: '1.5rem', color: 'white', zIndex: 1, fontWeight: 600, marginBottom: '1rem' }}>
+            ¡Felicidades <strong style={{ fontSize: '1.75rem', color: '#0A1628' }}>{winnerName || 'Jugador'}</strong>!
+          </p>
+          <p style={{ fontSize: '1.125rem', color: 'white', zIndex: 1, opacity: 0.9, maxWidth: '400px' }}>
+            El administrador validará la victoria y se pondrá en contacto para la entrega del premio.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
