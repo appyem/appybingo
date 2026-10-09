@@ -6,6 +6,15 @@ export function getCardUrl(cardId: string): string {
 }
 
 export function buildApprovedWhatsAppMessage(playerName: string, requestId: string, cards: Card[]): string {
-  const list = cards.map(c => 'Cartón ' + c.cardNumberFormatted + ':\n' + c.url).join('\n\n');
-  return 'Hola ' + playerName + '.\n\nTu solicitud de AppyBingo (' + requestId + ') fue aprobada.\n\nTus cartones ya están disponibles:\n\n' + list + '\n\n¡Buena suerte!';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://appybingo.com';
+  const myCardsUrl = baseUrl + '/#/mis-cartones';
+  
+  let message = 'Hola ' + playerName + '.\n\n';
+  message += 'Tu solicitud de AppyBingo (' + requestId + ') fue aprobada. 🎉\n\n';
+  message += 'Tienes ' + cards.length + ' cartón(es) disponible(s) para jugar.\n\n';
+  message += '👉 Haz clic aquí para ver y jugar todos tus cartones juntos en una sola pantalla:\n';
+  message += myCardsUrl + '\n\n';
+  message += '¡Mucha suerte! 🍀';
+  
+  return message;
 }

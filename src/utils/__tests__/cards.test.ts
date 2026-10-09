@@ -14,8 +14,8 @@ describe('Utilidades de Cartones', () => {
     
     expect(msg).toContain('Juan');
     expect(msg).toContain('REQ-1');
-    expect(msg).toContain('AB-001');
-    expect(msg).toContain('https://test.com/#/carton/123');
+    expect(msg).toContain('1 cartón(es)');
+    expect(msg).toMatch(/https?:\/\/[^\s]+\/#\/mis-cartones/); // O la URL base que use el test
     
     const link = "whatsapp://send?phone=573215177902&text=" + encodeURIComponent(msg);
     expect(link).toContain('whatsapp://send?phone=');

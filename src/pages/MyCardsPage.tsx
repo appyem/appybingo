@@ -210,14 +210,47 @@ export function MyCardsPage() {
           <Button variant="primary" style={{marginTop:'1rem'}} onClick={() => window.location.hash = '#solicitar'}>Solicitar Cartones</Button>
         </div>
       ) : (
-        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:'1.5rem'}}>
-          {cards.map(card => (
-            <div key={card.id} style={{background:'var(--color-bg-surface)', border:'1px solid var(--color-border)', borderRadius:'var(--radius-xl)', padding:'1.5rem', textAlign:'center', transition:'all 0.2s'}}>
-              <div style={{fontSize:'1.25rem', fontWeight:700, color:'var(--color-primary)', marginBottom:'1rem', fontFamily:'monospace'}}>{card.cardNumberFormatted}</div>
-              <div style={{marginBottom:'1.5rem', opacity:0.8}}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '400px', margin: '0 auto' }}>
+          {cards.map((card, index) => (
+            <div 
+              key={card.id} 
+              style={{
+                background: 'var(--color-bg-surface)', 
+                border: '2px solid var(--color-border)', 
+                borderRadius: 'var(--radius-xl)', 
+                padding: '1.5rem', 
+                textAlign: 'center', 
+                transition: 'all 0.2s',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
+              }}
+            >
+              <div style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: 800, 
+                color: 'var(--color-primary)', 
+                marginBottom: '1rem', 
+                fontFamily: 'monospace',
+                letterSpacing: '0.05em',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
+              }}>
+                <span>🎟️</span> CARTÓN {index + 1}: {card.cardNumberFormatted}
+              </div>
+              
+              <div style={{ marginBottom: '1.5rem', opacity: 0.9 }}>
                 <BingoCardDisplay matrix={card.matrix} cardNumber={card.cardNumberFormatted} />
               </div>
-              <Button variant="outline" size="sm" onClick={() => window.location.hash = '#/carton/' + card.id}>Ver Cartón Completo</Button>
+              
+              <Button 
+                variant="primary" 
+                size="md" 
+                onClick={() => window.location.hash = '#/carton/' + card.id}
+                style={{ width: '100%', fontWeight: 700 }}
+              >
+                Abrir en Pantalla Completa
+              </Button>
             </div>
           ))}
         </div>
