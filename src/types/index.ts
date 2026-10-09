@@ -19,12 +19,17 @@ export type GameState = 'DRAFT' | 'OPEN' | 'READY' | 'RUNNING' | 'PAUSED' | 'FIN
 export type CardStatus = 'AVAILABLE' | 'ASSIGNED' | 'ACTIVE' | 'WINNER' | 'INVALID' | 'CANCELLED';
 export type PlayerStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'ASSIGNED' | 'CONNECTED' | 'PLAYING' | 'FINISHED' | 'DISCONNECTED';
 export type RequestStatus = 'PENDIENTE' | 'EN_REVISION' | 'APROBADA' | 'RECHAZADA' | 'CANCELADA';
+export type PrizeType = 'CASH' | 'PRODUCT';
 
 export interface Game {
   id: GameId; name: string; variant: BingoVariant; state: GameState;
   createdAt: number; updatedAt: number; createdBy: string;
   pricePerCard: number;
-  prizeValue: number;
+  prizeType?: PrizeType;
+  prizeValue?: number;
+  prizeName?: string;
+  prizeDescription?: string;
+  prizeImageUrl?: string;
   scheduledAt?: number;
   currentBall?: number | null;
   drawnNumbers?: number[];

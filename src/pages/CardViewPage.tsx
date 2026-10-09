@@ -662,7 +662,7 @@ export function CardViewPage() {
             }}>
               <div style={{ fontSize: '0.875rem', color: 'white', textTransform: 'uppercase', fontWeight: 600 }}>Valor del Premio</div>
               <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#FCBF49', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-                {formatCurrency(game.prizeValue)}
+                {game.prizeValue ? formatCurrency(game.prizeValue) : 'Sin definir'}
               </div>
             </div>
           )}

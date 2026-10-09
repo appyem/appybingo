@@ -228,9 +228,12 @@ export function HomePage() {
         }}>
           {/* Logo con efecto de brillo */}
           <div style={{ position: 'relative' }}>
-            <img 
-              src="/logo.png" 
-              alt="AppyBingo" 
+            <video 
+              src="/logoanimado.mp4" 
+              autoPlay 
+              loop 
+              muted 
+              playsInline
               style={{ 
                 height: '140px', 
                 width: 'auto',
@@ -480,7 +483,7 @@ function GameCard({ game, isActive, formatCurrency }: { game: Game; isActive: bo
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1rem', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
         <div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>🏆 Premio Mayor</div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#FCBF49' }}>{formatCurrency(game.prizeValue)}</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#FCBF49' }}>{game.prizeValue ? formatCurrency(game.prizeValue) : (game.prizeName || 'Premio especial')}</div>
         </div>
         <div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>🎟️ Valor Cartón</div>

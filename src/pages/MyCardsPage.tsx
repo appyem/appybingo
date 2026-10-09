@@ -476,7 +476,7 @@ export function MyCardsPage() {
               Otro jugador cantó <strong style={{ color: '#FCBF49' }}>BINGO</strong> unos milisegundos antes que tú.
             </p>
             <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
-              El premio de <strong style={{ color: '#FCBF49' }}>{game?.prizeValue ? formatCurrency(game.prizeValue) : 'esta partida'}</strong> ya tiene dueño.
+              El premio de <strong style={{ color: '#FCBF49' }}>{game?.prizeType === 'PRODUCT' ? (game.prizeName || 'el producto') : (game?.prizeValue ? formatCurrency(game.prizeValue) : 'esta partida')}</strong> ya tiene dueño.
             </p>
           </div>
           <p style={{ fontSize: '1.25rem', color: '#FCBF49', fontWeight: 700, marginBottom: '2rem', maxWidth: '400px' }}>

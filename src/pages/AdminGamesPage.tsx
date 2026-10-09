@@ -12,6 +12,10 @@ export function AdminGamesPage() {
   const [newGameName, setNewGameName] = useState('');
   const [pricePerCard, setPricePerCard] = useState('');
   const [prizeValue, setPrizeValue] = useState('');
+  const [prizeType, setPrizeType] = useState<'CASH' | 'PRODUCT'>('CASH');
+  const [prizeName, setPrizeName] = useState('');
+  const [prizeDescription, setPrizeDescription] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [scheduledDate, setScheduledDate] = useState('');
   const [creating, setCreating] = useState(false);
   const [drawing, setDrawing] = useState<string | null>(null);
@@ -39,25 +43,52 @@ export function AdminGamesPage() {
 
   const handleCreateGame = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newGameName.trim() || !pricePerCard || !prizeValue) {
-      alert('Por favor completa todos los campos, incluyendo los valores monetarios.');
+    if (!newGameName.trim() || !pricePerCard) {
+      alert('Por favor completa el nombre y el valor por cartón.');
+      return;
+    }
+    if (prizeType === 'CASH' && !prizeValue) {
+      alert('Por favor ingresa el valor del premio en efectivo.');
+      return;
+    }
+    if (prizeType === 'PRODUCT' && !prizeName.trim()) {
+      alert('Por favor ingresa el nombre del producto premio.');
       return;
     }
     
     setCreating(true);
     try {
+      let finalImageUrl = '';
+      
+      // Si es producto y hay un archivo seleccionado, subirlo a Firebase Storage
+      if (prizeType === 'PRODUCT' && selectedFile) {
+        const { getStorage, ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+        const storage = getStorage();
+        const storageRef = ref(storage, `prizes/${Date.now()}_${selectedFile.name}`);
+        const snapshot = await uploadBytes(storageRef, selectedFile);
+        finalImageUrl = await getDownloadURL(snapshot.ref);
+      }
+
       await gameRepository.createGame({
         name: newGameName.trim(),
         variant: 'BINGO_75',
         state: 'DRAFT',
         createdBy: 'admin',
         pricePerCard: Number(pricePerCard),
-        prizeValue: Number(prizeValue),
+        prizeType,
+        prizeValue: prizeType === 'CASH' ? Number(prizeValue) : undefined,
+        prizeName: prizeType === 'PRODUCT' ? prizeName.trim() : undefined,
+        prizeDescription: prizeType === 'PRODUCT' ? prizeDescription.trim() : undefined,
+        prizeImageUrl: prizeType === 'PRODUCT' ? finalImageUrl : undefined,
         scheduledAt: scheduledDate ? new Date(scheduledDate).getTime() : undefined
       });
       setNewGameName('');
       setPricePerCard('');
       setPrizeValue('');
+      setPrizeType('CASH');
+      setPrizeName('');
+      setPrizeDescription('');
+      setSelectedFile(null);
       setScheduledDate('');
       await loadGames();
     } catch (err: unknown) {
@@ -74,6 +105,20 @@ export function AdminGamesPage() {
     
     try {
       await gameRepository.updateGameState(game.id, newState);
+      
+      // Si el juego finaliza y tiene una imagen de premio, borrarla de Firebase Storage
+      if (newState === 'FINISHED' && game.prizeImageUrl) {
+        try {
+          const { getStorage, ref, deleteObject } = await import('firebase/storage');
+          const storage = getStorage();
+          const imageRef = ref(storage, game.prizeImageUrl);
+          await deleteObject(imageRef);
+          console.log('✅ Imagen del premio eliminada automáticamente de Firebase Storage.');
+        } catch (storageErr) {
+          console.warn('⚠️ No se pudo eliminar la imagen del premio:', storageErr);
+        }
+      }
+      
       await loadGames();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Desconocido';
@@ -245,14 +290,49 @@ export function AdminGamesPage() {
                 <input type="number" placeholder="5000" value={pricePerCard} onChange={(e) => setPricePerCard(e.target.value)} required min="1" style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Premio Mayor ($)</label>
-                <input type="number" placeholder="500000" value={prizeValue} onChange={(e) => setPrizeValue(e.target.value)} required min="1" style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }} />
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Tipo de Premio</label>
+                <select value={prizeType} onChange={(e) => setPrizeType(e.target.value as 'CASH' | 'PRODUCT')} style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }}>
+                  <option value="CASH">Efectivo 💰</option>
+                  <option value="PRODUCT">Producto 🎁</option>
+                </select>
               </div>
+              {prizeType === 'CASH' ? (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Valor del Premio ($)</label>
+                  <input type="number" placeholder="500000" value={prizeValue} onChange={(e) => setPrizeValue(e.target.value)} required min="1" style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }} />
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Nombre del Producto</label>
+                    <input type="text" placeholder="Ej: Televisor 55 pulgadas" value={prizeName} onChange={(e) => setPrizeName(e.target.value)} required style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Descripción del Producto</label>
+                    <input type="text" placeholder="Ej: Smart TV 4K con garantía de 1 año" value={prizeDescription} onChange={(e) => setPrizeDescription(e.target.value)} style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Imagen del Producto (Archivo Local)</label>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} 
+                      style={{ width: '100%', padding: '0.5rem', background: 'var(--color-bg-elevated)', border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem', cursor: 'pointer' }} 
+                    />
+                    {selectedFile && (
+                      <div style={{ marginTop: '0.75rem', textAlign: 'center', padding: '0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-md)' }}>
+                        <img src={URL.createObjectURL(selectedFile)} alt="Vista previa" style={{ maxWidth: '100%', maxHeight: '150px', borderRadius: 'var(--radius-md)', objectFit: 'cover' }} />
+                        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.5rem', wordBreak: 'break-all' }}>{selectedFile.name}</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Fecha y Hora Programada</label>
                 <input type="datetime-local" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }} />
               </div>
-              <Button variant="primary" size="md" type="submit" disabled={creating || !newGameName.trim() || !pricePerCard || !prizeValue}>
+              <Button variant="primary" size="md" type="submit" disabled={creating || !newGameName.trim() || !pricePerCard || (prizeType === 'CASH' && !prizeValue) || (prizeType === 'PRODUCT' && !prizeName.trim())}>
                 {creating ? 'Creando...' : 'Crear Juego'}
               </Button>
             </form>
