@@ -10,11 +10,6 @@ interface CustomNavigator extends Navigator {
 }
 
 export function useInstallPrompt() {
-  const ua = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua);
-  const isAndroid = /Android/i.test(ua);
-  const isMobile = isIOS || isAndroid;
-  
   const [isInstalled, setIsInstalled] = useState(() => {
     return (
       window.matchMedia('(display-mode: standalone)').matches || 
@@ -25,9 +20,6 @@ export function useInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
-    // Debug para que puedas verificar en la consola del navegador de tu celular
-    console.log('🔍 PWA Debug -> isMobile:', isMobile, '| isInstalled:', isInstalled, '| deferredPrompt:', !!deferredPrompt);
-
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -43,9 +35,10 @@ export function useInstallPrompt() {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
-  }, [isMobile, isInstalled]);
+  }, []);
 
   const handleInstallClick = async () => {
+    // Intentar instalar directamente. Si el navegador lo permite, se abre la ventana nativa.
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
@@ -53,23 +46,12 @@ export function useInstallPrompt() {
         setDeferredPrompt(null);
         setIsInstalled(true);
       }
-      return;
     }
-
-    if (isIOS) {
-      alert('Para instalar AppyBingo en tu iPhone:\n\n1. Toca el botón "Compartir" (cuadrado con flecha) en la parte inferior de Safari.\n2. Selecciona "Agregar a pantalla de inicio".\n3. Toca "Agregar".');
-      return;
-    }
-
-    if (isAndroid) {
-      alert('Para instalar AppyBingo en tu Android:\n\n1. Toca el menú de Chrome (⋮) en la esquina superior derecha.\n2. Selecciona "Instalar aplicación" o "Agregar a pantalla principal".\n3. Toca "Instalar" o "Agregar".');
-      return;
-    }
+    // Si deferredPrompt es null, NO se hace nada. Cero alertas, cero instrucciones.
   };
 
-  // Garantizamos que el botón se muestre en CUALQUIER móvil si no está instalado
-  // TEMPORAL: Forzado a true para diagnóstico de renderizado
-  const isInstallable = true;
+  // El botón se muestra siempre que no esté instalado
+  const isInstallable = !isInstalled;
 
-  return { isInstallable, isInstalled, isIOS, isAndroid, handleInstallClick };
+  return { isInstallable, isInstalled, handleInstallClick };
 }
