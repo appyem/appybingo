@@ -160,3 +160,66 @@
   padding-top: 1rem;
   border-top: 1px solid var(--color-border);
 }
+
+/* Balotas animadas solo en móvil */
+.mobileBalls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .mobileBalls {
+    display: none;
+  }
+}
+
+.bingoBall {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  animation: bounce 2s ease-in-out infinite;
+}
+
+.ballB {
+  background: linear-gradient(135deg, #E63946, #c92b38);
+  animation-delay: 0s;
+}
+
+.ballI {
+  background: linear-gradient(135deg, #F77F00, #e06f00);
+  animation-delay: 0.2s;
+}
+
+.ballN {
+  background: linear-gradient(135deg, #2A9D8F, #1f7a6f);
+  animation-delay: 0.4s;
+}
+
+.ballG {
+  background: linear-gradient(135deg, #0077B6, #005a8a);
+  animation-delay: 0.6s;
+}
+
+.ballO {
+  background: linear-gradient(135deg, #9B5DE5, #7a3fc4);
+  animation-delay: 0.8s;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}

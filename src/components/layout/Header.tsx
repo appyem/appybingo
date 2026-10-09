@@ -22,6 +22,15 @@ export function Header() {
                 objectFit: 'contain'
               }} 
             />
+                    {/* Balotas animadas solo en móvil */}
+          <div className={styles.mobileBalls}>
+            <div className={`${styles.bingoBall} ${styles.ballB}`}>B</div>
+            <div className={`${styles.bingoBall} ${styles.ballI}`}>I</div>
+            <div className={`${styles.bingoBall} ${styles.ballN}`}>N</div>
+            <div className={`${styles.bingoBall} ${styles.ballG}`}>G</div>
+            <div className={`${styles.bingoBall} ${styles.ballO}`}>O</div>
+          </div>
+
           </a>
 
           <nav className={styles.nav} aria-label="Navegacion principal">
