@@ -18,18 +18,28 @@ export class FirebaseRequestRepository implements RequestRepository {
     return snap.exists() ? ({ id: snap.id, ...snap.data() } as CardRequest) : null;
   }
 
-  async createRequest(data: Omit<CardRequest, 'id' | 'createdAt'>): Promise<CardRequest> {
-    // Verificar si ya existe una solicitud pendiente para este WhatsApp y juego
+    async createRequest(data: Omit<CardRequest, 'id' | 'createdAt'>): Promise<CardRequest> {
+    // Verificar duplicados solo si gameId y whatsapp están definidos
     if (data.whatsapp && data.gameId) {
-      const q = query(
-        this.col, 
-        where('whatsapp', '==', data.whatsapp), 
-        where('gameId', '==', data.gameId),
-        where('status', '==', 'PENDIENTE')
-      );
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        throw new Error('Ya tienes una solicitud pendiente para este juego. Por favor espera a que sea procesada.');
+      try {
+        const q = query(
+          this.col, 
+          where('whatsapp', '==', data.whatsapp), 
+          where('gameId', '==', data.gameId),
+          where('status', '==', 'PENDIENTE')
+        );
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          throw new Error('Ya tienes una solicitud pendiente para este juego.');
+        }
+      } catch (err: unknown) {
+        const error = err as { code?: string; message?: string };
+        // Si Firestore pide crear un índice compuesto, NO bloqueamos la solicitud para no detener el juego
+        if (error.code === 'failed-precondition' || (error.message && error.message.toLowerCase().includes('index'))) {
+          console.warn('⚠️ Índice de Firestore faltante, permitiendo solicitud para no bloquear el juego.');
+        } else {
+          throw err;
+        }
       }
     }
 
