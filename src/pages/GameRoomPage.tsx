@@ -229,7 +229,28 @@ export function GameRoomPage() {
         {/* Header Compacto */}
         <div className="game-room-header">
           <div>
-            <h1 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0, color: 'white' }}>{game.name}</h1>
+            {game.prizeType === 'PRODUCT' && game.prizeImageUrl && (
+            <div style={{ 
+              marginBottom: '1rem', 
+              borderRadius: 'var(--radius-lg)', 
+              overflow: 'hidden', 
+              border: '2px solid rgba(252, 191, 73, 0.3)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+              maxWidth: '400px',
+              margin: '0 auto 1rem auto'
+            }}>
+              <img 
+                src={game.prizeImageUrl} 
+                alt={game.prizeName || 'Premio'} 
+                style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} 
+              />
+              <div style={{ padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)' }}>
+                <div style={{ fontSize: '0.75rem', color: '#FCBF49', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.25rem' }}>🎁 Premio en Juego</div>
+                <div style={{ fontSize: '1.125rem', fontWeight: 800, color: 'white' }}>{game.prizeName}</div>
+              </div>
+            </div>
+          )}
+          <h1 style={{ fontSize: '1.125rem', fontWeight: 700, margin: 0, color: 'white' }}>{game.name}</h1>
             <span style={{
               fontSize: '0.7rem',
               padding: '0.15rem 0.5rem',

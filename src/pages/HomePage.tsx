@@ -480,10 +480,39 @@ function GameCard({ game, isActive, formatCurrency }: { game: Game; isActive: bo
         )}
       </div>
 
+      {/* PREMIO DESTACADO (Si es producto con imagen) */}
+      {game.prizeType === 'PRODUCT' && game.prizeImageUrl && (
+        <div style={{ 
+          marginBottom: '1rem', 
+          borderRadius: 'var(--radius-lg)', 
+          overflow: 'hidden', 
+          border: '2px solid rgba(252, 191, 73, 0.3)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+        }}>
+          <img 
+            src={game.prizeImageUrl} 
+            alt={game.prizeName || 'Premio'} 
+            style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} 
+          />
+          <div style={{ padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)' }}>
+            <div style={{ fontSize: '0.75rem', color: '#FCBF49', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.25rem' }}>🎁 Premio Mayor</div>
+            <div style={{ fontSize: '1.125rem', fontWeight: 800, color: 'white' }}>{game.prizeName}</div>
+            {game.prizeDescription && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem', lineHeight: 1.3 }}>{game.prizeDescription}</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* INFO DE PRECIO (Siempre visible) */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1rem', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
         <div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>🏆 Premio Mayor</div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#FCBF49' }}>{game.prizeValue ? formatCurrency(game.prizeValue) : (game.prizeName || 'Premio especial')}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>
+            {game.prizeType === 'PRODUCT' ? '🎁 Tipo de Premio' : '🏆 Premio Mayor'}
+          </div>
+          <div style={{ fontSize: '1.125rem', fontWeight: 900, color: '#FCBF49' }}>
+            {game.prizeType === 'PRODUCT' ? (game.prizeName || 'Producto') : (game.prizeValue ? formatCurrency(game.prizeValue) : 'Por definir')}
+          </div>
         </div>
         <div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.25rem' }}>🎟️ Valor Cartón</div>

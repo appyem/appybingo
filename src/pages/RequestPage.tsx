@@ -232,7 +232,31 @@ export function RequestPage() {
 
         {step === 'FORM' && (
           <div className="request-form-card">
-            <h1 className="request-title">Solicitar Cartones</h1>
+            {game?.prizeType === 'PRODUCT' && game?.prizeImageUrl && (
+          <div style={{ 
+            marginBottom: '1.5rem', 
+            borderRadius: 'var(--radius-lg)', 
+            overflow: 'hidden', 
+            border: '2px solid rgba(252, 191, 73, 0.3)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            maxWidth: '500px',
+            margin: '0 auto 1.5rem auto'
+          }}>
+            <img 
+              src={game.prizeImageUrl} 
+              alt={game.prizeName || 'Premio'} 
+              style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} 
+            />
+            <div style={{ padding: '1rem', background: 'var(--color-bg-elevated)', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.75rem', color: '#FCBF49', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.25rem' }}>🎁 Juega y Gana</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'white' }}>{game.prizeName}</div>
+              {game.prizeDescription && (
+                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '0.5rem', lineHeight: 1.4 }}>{game.prizeDescription}</div>
+              )}
+            </div>
+          </div>
+        )}
+        <h1 className="request-title">Solicitar Cartones</h1>
             <p className="request-subtitle">Completa tus datos para generar tu solicitud</p>
             
             {game && (
