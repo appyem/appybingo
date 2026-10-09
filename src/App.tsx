@@ -37,7 +37,7 @@ function AppContent() {
 
   // Rutas públicas
   if (hash === '#solicitar' || hash.startsWith('#/solicitar/')) return <Layout><RequestPage /></Layout>;
-  if (hash === '#mis-cartones' || hash === '#/mis-cartones') return <Layout><MyCardsPage /></Layout>;
+  if (hash === '#mis-cartones' || hash === '#/mis-cartones' || hash.startsWith('#/mis-cartones/')) return <Layout><MyCardsPage /></Layout>;
   if (hash.startsWith('#/carton/')) return <Layout><CardViewPage /></Layout>;
   if (hash.startsWith('#/game/')) return <Layout><GameRoomPage /></Layout>;
   

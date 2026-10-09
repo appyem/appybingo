@@ -7,7 +7,7 @@ export function getCardUrl(cardId: string): string {
 
 export function buildApprovedWhatsAppMessage(playerName: string, requestId: string, cards: Card[]): string {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://appybingo.com';
-  const myCardsUrl = baseUrl + '/#/mis-cartones';
+  const myCardsUrl = baseUrl + '/#/mis-cartones/' + requestId;
   
   let message = 'Hola ' + playerName + '.\n\n';
   message += 'Tu solicitud de AppyBingo (' + requestId + ') fue aprobada. 🎉\n\n';

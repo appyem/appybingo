@@ -15,13 +15,25 @@ export function MyCardsPage() {
   const soundEnabledRef = useRef(soundEnabled);
 
   useEffect(() => {
-    const currentPlayerId = sessionStorage.getItem('currentDemoPlayerId') || 'player-2';
+    const hash = window.location.hash;
+    let fetchPromise: Promise<Card[]>;
+
+    // Si hay un requestId en la URL (ej: #/mis-cartones/REQ-123), buscamos por ese ID directamente
+    if (hash.startsWith('#/mis-cartones/')) {
+      const requestId = hash.replace('#/mis-cartones/', '').trim();
+      fetchPromise = cardRepository.getCardsByRequestId(requestId);
+    } else {
+      // Fallback: comportamiento anterior por playerId en sesión local
+      const currentPlayerId = sessionStorage.getItem('currentDemoPlayerId') || 'player-2';
+      fetchPromise = cardRepository.getCardsByPlayerId(currentPlayerId);
+    }
+
     let unsubscribeGame: (() => void) | undefined;
 
-    cardRepository.getCardsByPlayerId(currentPlayerId).then(c => { 
+    fetchPromise.then(c => { 
       setCards(c); 
       
-      // Suscribirse al juego del primer cartón (asumiendo que todos son del mismo juego activo)
+      // Suscribirse al juego del primer cartón
       if (c.length > 0 && c[0].gameId) {
         const gameId = c[0].gameId;
         unsubscribeGame = gameRepository.subscribeToGame(gameId, (gameData) => {
@@ -31,6 +43,9 @@ export function MyCardsPage() {
         });
       }
       setLoading(false); 
+    }).catch(err => {
+      console.error('Error cargando cartones:', err);
+      setLoading(false);
     });
 
     return () => {
