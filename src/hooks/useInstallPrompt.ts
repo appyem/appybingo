@@ -9,7 +9,14 @@ interface CustomNavigator extends Navigator {
   standalone?: boolean;
 }
 
+interface CustomWindow extends Window {
+  MSStream?: unknown;
+}
+
 export function useInstallPrompt() {
+  // Detectar si es iOS (iPhone, iPad, iPod) de forma segura sin 'any'
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as CustomWindow).MSStream;
+
   // Inicializar el estado directamente para evitar setState en useEffect
   const [isInstalled, setIsInstalled] = useState(() => {
     return (
@@ -39,6 +46,11 @@ export function useInstallPrompt() {
   }, []);
 
   const handleInstallClick = async () => {
+    if (isIOS) {
+      alert('Para instalar AppyBingo en tu iPhone:\n\n1. Toca el botón "Compartir" (cuadrado con flecha) en la parte inferior de Safari.\n2. Desplázate hacia abajo y selecciona "Agregar a pantalla de inicio".\n3. Toca "Agregar" en la esquina superior derecha.');
+      return;
+    }
+
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -48,7 +60,8 @@ export function useInstallPrompt() {
     }
   };
 
-  const isInstallable = !!deferredPrompt && !isInstalled;
+  // Mostrar botón si es instalable nativamente O si es iOS (para mostrar la instrucción)
+  const isInstallable = (!!deferredPrompt || isIOS) && !isInstalled;
 
-  return { isInstallable, isInstalled, handleInstallClick };
+  return { isInstallable, isInstalled, isIOS, handleInstallClick };
 }

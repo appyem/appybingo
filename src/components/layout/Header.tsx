@@ -6,7 +6,7 @@ import styles from './Header.module.css';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isInstallable, handleInstallClick } = useInstallPrompt();
+  const { isInstallable, isIOS, handleInstallClick } = useInstallPrompt();
 
   return (
     <header className={styles.header}>
@@ -53,7 +53,7 @@ export function Header() {
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(252,191,73,0.5)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(252,191,73,0.3)'; }}
               >
-                📲 Descargar App
+                {isIOS ? '📲 Agregar a Inicio' : '📲 Descargar App'}
               </button>
             )}
             <a href="#/admin/requests"><Button variant="ghost" size="sm">Admin</Button></a>
