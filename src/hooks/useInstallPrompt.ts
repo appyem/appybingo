@@ -14,10 +14,10 @@ interface CustomWindow extends Window {
 }
 
 export function useInstallPrompt() {
-  // Detectar si es iOS (iPhone, iPad, iPod) de forma segura sin 'any'
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as CustomWindow).MSStream;
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isMobile = isIOS || isAndroid;
 
-  // Inicializar el estado directamente para evitar setState en useEffect
   const [isInstalled, setIsInstalled] = useState(() => {
     return (
       window.matchMedia('(display-mode: standalone)').matches || 
@@ -51,17 +51,23 @@ export function useInstallPrompt() {
       return;
     }
 
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-      setIsInstalled(true);
+    if (isAndroid && !deferredPrompt) {
+      alert('Para instalar AppyBingo en tu Android:\n\n1. Toca el menú de Chrome (los 3 puntos verticales ⋮ en la esquina superior derecha).\n2. Selecciona "Instalar aplicación" o "Agregar a la pantalla principal".\n3. Confirma tocando "Instalar" o "Agregar".');
+      return;
+    }
+
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setIsInstalled(true);
+      }
     }
   };
 
-  // Mostrar botón si es instalable nativamente O si es iOS (para mostrar la instrucción)
-  const isInstallable = (!!deferredPrompt || isIOS) && !isInstalled;
+  // Mostrar botón en móviles (Android/iOS) o si el navegador lo soporta nativamente, siempre que no esté instalado.
+  const isInstallable = (isMobile || !!deferredPrompt) && !isInstalled;
 
-  return { isInstallable, isInstalled, isIOS, handleInstallClick };
+  return { isInstallable, isInstalled, isIOS, isAndroid, handleInstallClick };
 }
