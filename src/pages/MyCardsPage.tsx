@@ -406,7 +406,7 @@ export function MyCardsPage() {
                 )}
               </div>
 
-              {!gameHasWinner && (
+              {!gameHasWinner && checkHasBingo(card, currentMarks) && (
                 <button
                   onClick={() => handleClaimBingo(card.id)}
                   style={{
