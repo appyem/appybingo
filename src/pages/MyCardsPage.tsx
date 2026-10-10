@@ -383,6 +383,8 @@ export function MyCardsPage() {
                 {card.matrix.map((row, rowIndex) => 
                   row.map((cell, colIndex) => {
                     const isFree = cell === 'FREE';
+                    const isCenter = rowIndex === 2 && colIndex === 2; // Casilla central
+                    const centerText = isCenter ? (game?.sponsorName || 'AppyBingo') : 'FREE';
                     const num = isFree ? null : (cell as number);
                     const isMarked = isFree || (num !== null && currentMarks.has(num));
                     const isInvalid = invalidMark === `${card.id}-${num}`;
@@ -403,7 +405,11 @@ export function MyCardsPage() {
                           color: isMarked ? 'white' : (isFree ? '#0A1628' : 'white'),
                           borderRadius: '8px',
                           fontWeight: 800,
-                          fontSize: isFree ? '0.7rem' : '1.1rem',
+                          fontSize: isCenter ? '0.65rem' : (isFree ? '0.7rem' : '1.1rem'), // Letra más pequeña para el patrocinador
+                          lineHeight: 1.1,
+                          textAlign: 'center',
+                          padding: isCenter ? '0.25rem' : '0',
+                          wordWrap: 'break-word',
                           border: isInvalid ? '2px solid var(--color-error)' : (isPendingAuto ? '2px solid var(--color-warning)' : (isFree ? 'none' : '1px solid var(--color-border)')),
                           cursor: isFree || isMarked ? 'default' : 'pointer',
                           transition: 'all 0.2s',
@@ -412,7 +418,7 @@ export function MyCardsPage() {
                           position: 'relative'
                         }}
                       >
-                        {isFree ? 'FREE' : cell}
+                        {isCenter ? centerText : (isFree ? 'FREE' : cell)}
                         {isMarked && !isFree && (
                           <div style={{ position: 'absolute', fontSize: '1.5rem', opacity: 0.8 }}>✓</div>
                         )}

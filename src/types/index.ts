@@ -33,6 +33,7 @@ export interface Game {
   scheduledAt?: number;
   currentBall?: number | null;
   drawnNumbers?: number[];
+  sponsorName?: string; // Nombre del patrocinador de la partida
 }
 
 export interface Player {

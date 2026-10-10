@@ -17,6 +17,7 @@ export function AdminGamesPage() {
   const [prizeDescription, setPrizeDescription] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [scheduledDate, setScheduledDate] = useState('');
+  const [sponsorName, setSponsorName] = useState('');
   const [creating, setCreating] = useState(false);
   const [drawing, setDrawing] = useState<string | null>(null);
   const [deletingGame, setDeletingGame] = useState<string | null>(null);
@@ -83,7 +84,8 @@ export function AdminGamesPage() {
           ...(prizeDescription.trim() ? { prizeDescription: prizeDescription.trim() } : {}),
           ...(finalImageUrl ? { prizeImageUrl: finalImageUrl } : {})
         } : {}),
-        ...(scheduledDate ? { scheduledAt: new Date(scheduledDate).getTime() } : {})
+        ...(scheduledDate ? { scheduledAt: new Date(scheduledDate).getTime() } : {}),
+        sponsorName: sponsorName.trim() || 'AppyBingo'
       };
 
       await gameRepository.createGame(gameData);
@@ -96,6 +98,7 @@ export function AdminGamesPage() {
       setPrizeDescription('');
       setSelectedFile(null);
       setScheduledDate('');
+      setSponsorName('');
       await loadGames();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Desconocido';
@@ -318,6 +321,16 @@ export function AdminGamesPage() {
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Fecha y Hora Programada</label>
                   <input type="datetime-local" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Patrocinador de la Partida (Opcional)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ej: Supermercados Éxito (Si se deja vacío, dirá AppyBingo)" 
+                    value={sponsorName} 
+                    onChange={(e) => setSponsorName(e.target.value)} 
+                    style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }} 
+                  />
                 </div>
                 <Button variant="primary" size="md" type="submit" disabled={creating || !newGameName.trim() || !pricePerCard || (prizeType === 'CASH' && !prizeValue) || (prizeType === 'PRODUCT' && !prizeName.trim())}>
                   {creating ? 'Creando...' : 'Crear Juego'}
