@@ -63,15 +63,15 @@ export function GameRoomPage() {
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [viewers, setViewers] = useState<number>(() => {
-    // Calcular espectadores base según la hora actual
     const hour = new Date().getHours();
     let base = 300;
-    if (hour >= 19 && hour <= 23) base = 1500; // Horas pico noche
-    else if (hour >= 12 && hour <= 14) base = 1000; // Horas pico almuerzo
-    else if (hour >= 7 && hour <= 11) base = 500; // Mañana
-    else if (hour >= 0 && hour <= 5) base = 80; // Madrugada
+    if (hour >= 19 && hour <= 23) base = 1500;
+    else if (hour >= 12 && hour <= 14) base = 1000;
+    else if (hour >= 7 && hour <= 11) base = 500;
+    else if (hour >= 0 && hour <= 5) base = 80;
     return base + Math.floor(Math.random() * 300);
   });
+  
   const prevBallRef = useRef<number | null>(null);
   const soundEnabledRef = useRef(soundEnabled);
 
@@ -80,17 +80,14 @@ export function GameRoomPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Simulación realista de espectadores entrando y saliendo
   useEffect(() => {
     const viewerInterval = setInterval(() => {
       setViewers(prev => {
-        // Variación aleatoria: -15 a +20 (asimetría para que tienda a crecer)
         const change = Math.floor(Math.random() * 36) - 15;
         const next = prev + change;
-        // Nunca bajar de 50, nunca subir de 5000
         return Math.max(50, Math.min(5000, next));
       });
-    }, 3500); // Cada 3.5 segundos cambia (más realista que cada segundo)
+    }, 3500);
 
     return () => clearInterval(viewerInterval);
   }, []);
@@ -105,7 +102,9 @@ export function GameRoomPage() {
     return () => { unsubscribe(); };
   }, [initialGameId]);
 
-  useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);
+  useEffect(() => { 
+    soundEnabledRef.current = soundEnabled; 
+  }, [soundEnabled]);
 
   useEffect(() => {
     if (game?.currentBall && game.currentBall !== prevBallRef.current) {
@@ -158,7 +157,6 @@ export function GameRoomPage() {
           50% { box-shadow: 0 0 25px rgba(252, 191, 73, 0.5); border-color: rgba(252, 191, 73, 0.8); }
         }
 
-        /* Fondo con vida: Gradiente alegre de AppyBingo con orbes flotantes */
         .game-room-bg {
           position: fixed; inset: 0; z-index: 0;
           background: linear-gradient(135deg, #1a0b2e 0%, #2d1b4e 40%, #0f172a 100%);
@@ -172,7 +170,6 @@ export function GameRoomPage() {
         .orb-2 { width: 30vw; height: 30vw; background: #F77F00; bottom: -5%; right: -5%; animation-delay: 2s; }
         .orb-3 { width: 25vw; height: 25vw; background: #9B5DE5; top: 40%; left: 40%; animation-delay: 4s; }
 
-        /* ====== MÓVIL (Intacto, vertical, con scroll si es necesario) ====== */
         .mobile-layout {
           display: flex; flex-direction: column; min-height: 100vh; position: relative; z-index: 2;
           overflow-y: auto; padding-bottom: 4rem;
@@ -188,15 +185,14 @@ export function GameRoomPage() {
           aspect-ratio: 1; font-size: 0.65rem; transition: all 0.3s ease;
         }
 
-        /* ====== PC (Estudio de Streaming: CERO SCROLL, 100% Pantalla) ====== */
         @media (min-width: 1024px) {
           .mobile-layout { display: none; }
           
           .desktop-layout {
             position: relative; z-index: 2;
-            height: 100vh; width: 100vw; overflow: hidden; /* GARANTIZA CERO SCROLL */
+            height: 100vh; width: 100vw; overflow: hidden;
             display: grid;
-            grid-template-rows: 12vh 1fr 8vh; /* Header, Cuerpo, Footer Patrocinio */
+            grid-template-rows: 12vh 1fr 8vh;
             padding: 1.5vh 2vw;
             box-sizing: border-box;
           }
@@ -210,14 +206,14 @@ export function GameRoomPage() {
 
           .desktop-body {
             display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2vw;
-            padding: 1.5vh 0; min-height: 0; /* Clave para evitar scroll en grid */
+            padding: 1.5vh 0; min-height: 0;
           }
 
           .desktop-board-section {
             background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px;
             padding: 1.5vh 1.5vw; display: flex; flex-direction: column;
-            height: 100%; /* Ocupa exactamente el espacio asignado */
+            height: 100%;
           }
 
           .desktop-board {
@@ -228,7 +224,7 @@ export function GameRoomPage() {
           .desktop-cell {
             display: flex; align-items: center; justify-content: center;
             border-radius: 8px; font-weight: 800;
-            font-size: clamp(14px, 1.8vh, 24px); /* ESCALA MATEMÁTICA CON LA PANTALLA */
+            font-size: clamp(14px, 1.8vh, 24px);
             transition: all 0.3s ease;
           }
 
@@ -252,7 +248,6 @@ export function GameRoomPage() {
             flex: 1; animation: glow-sponsor 3s ease-in-out infinite;
           }
 
-          /* Patrocinio Elegante en PC */
           .desktop-sponsor-bar {
             display: flex; align-items: center; justify-content: center; gap: 1vw;
             background: rgba(252, 191, 73, 0.1); backdrop-filter: blur(15px);
@@ -338,26 +333,75 @@ export function GameRoomPage() {
 
       {/* ================= LAYOUT PC (Streaming Profesional) ================= */}
       <div className="desktop-layout">
-        {/* Header Tipo TV */}
         <div className="desktop-header">
-          <div>
-            <h1 style={{ fontSize: 'clamp(24px, 3vh, 40px)', fontWeight: 900, margin: 0, color: 'white', letterSpacing: '-0.02em' }}>{game.name}</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5vw', marginTop: '0.5vh' }}>
-              {game.state === 'RUNNING' && (
-                <>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#E63946', animation: 'pulse-live 2s infinite' }} />
-                  <span style={{ fontSize: 'clamp(14px, 1.5vh, 20px)', fontWeight: 800, color: '#E63946', textTransform: 'uppercase' }}>EN VIVO</span>
-                </>
-              )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5vw' }}>
+            <div>
+              <h1 style={{ fontSize: 'clamp(24px, 3vh, 40px)', fontWeight: 900, margin: 0, color: 'white', letterSpacing: '-0.02em' }}>{game.name}</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5vw', marginTop: '0.5vh' }}>
+                {game.state === 'RUNNING' && (
+                  <>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#E63946', animation: 'pulse-live 2s infinite' }} />
+                    <span style={{ fontSize: 'clamp(14px, 1.5vh, 20px)', fontWeight: 800, color: '#E63946', textTransform: 'uppercase' }}>EN VIVO</span>
+                  </>
+                )}
+              </div>
             </div>
+
+            {/* Botón de Sonido para PC */}
+            {!soundEnabled && (game.state === 'RUNNING' || game.state === 'PAUSED') && (
+              <button 
+                onClick={() => { setSoundEnabled(true); speakBingoNumber(game.currentBall || 1); }}
+                style={{ 
+                  background: 'rgba(252, 191, 73, 0.15)', 
+                  border: '1px solid rgba(252, 191, 73, 0.5)', 
+                  color: '#FCBF49', 
+                  borderRadius: '12px', 
+                  padding: '0.8vh 1.2vw',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.5vw',
+                  cursor: 'pointer',
+                  fontSize: 'clamp(14px, 1.5vh, 18px)',
+                  fontWeight: 700,
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(252, 191, 73, 0.3)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(252, 191, 73, 0.15)'; }}
+              >
+                🔊 Activar Sonido
+              </button>
+            )}
+            {soundEnabled && (game.state === 'RUNNING' || game.state === 'PAUSED') && (
+              <button 
+                onClick={() => setSoundEnabled(false)}
+                style={{ 
+                  background: 'rgba(255, 255, 255, 0.1)', 
+                  border: '1px solid rgba(255, 255, 255, 0.2)', 
+                  color: 'white', 
+                  borderRadius: '12px', 
+                  padding: '0.8vh 1.2vw',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.5vw',
+                  cursor: 'pointer',
+                  fontSize: 'clamp(14px, 1.5vh, 18px)',
+                  fontWeight: 700,
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+              >
+                🔇 Silenciar
+              </button>
+            )}
           </div>
+
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 'clamp(32px, 4vh, 56px)', fontWeight: 900, color: '#FCBF49', fontFamily: 'monospace', letterSpacing: '0.05em' }}>
               {currentTime.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </div>
             <div style={{ fontSize: 'clamp(12px, 1.2vh, 16px)', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Transmisión en Directo</div>
           </div>
-          {/* Contador de Espectadores en Vivo */}
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
@@ -405,9 +449,7 @@ export function GameRoomPage() {
           </div>
         </div>
 
-        {/* Cuerpo Principal */}
         <div className="desktop-body">
-          {/* Columna Izquierda: Tablero Gigante Escalable */}
           <div className="desktop-board-section">
             <div className="desktop-board">
               {['B', 'I', 'N', 'G', 'O'].map(letter => {
@@ -436,7 +478,6 @@ export function GameRoomPage() {
             </div>
           </div>
 
-          {/* Columna Derecha: Balota + Premio */}
           <div className="desktop-side-panel">
             <div className="desktop-ball-section">
               <div style={{ fontSize: 'clamp(14px, 1.5vh, 20px)', fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '2vh' }}>
@@ -477,7 +518,6 @@ export function GameRoomPage() {
           </div>
         </div>
 
-        {/* Patrocinio Elegante (Glassmorphism) */}
         {game.sponsorName && game.sponsorName !== 'AppyBingo' && (
           <div className="desktop-sponsor-bar">
             <span style={{ opacity: 0.8 }}>✨ Partida presentada por</span>
@@ -509,7 +549,6 @@ export function GameRoomPage() {
   );
 }
 
-// Helper para clamp (si no está disponible en el entorno, fallback simple)
 function clamp(min: number, val: number, max: number) {
   return Math.max(min, Math.min(val, max));
 }
