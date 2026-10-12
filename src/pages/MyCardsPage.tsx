@@ -70,6 +70,7 @@ export function MyCardsPage() {
   const soundEnabledRef = useRef(soundEnabled);
   const autoMarkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoClaimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
 
   // 1. Helper para verificar Bingo localmente (Sin dependencias, seguro al inicio)
   const checkHasBingo = useCallback((card: Card, currentMarks: Set<number>) => {
@@ -211,6 +212,36 @@ export function MyCardsPage() {
   // 5. Sincronización de sonido
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  // 5.1 Música de fondo (volumen bajo, loop, controlada por soundEnabled)
+  useEffect(() => {
+    if (soundEnabled) {
+      // Crear instancia de audio solo si no existe
+      if (!bgMusicRef.current) {
+        const audio = new Audio('/fondobingo.mp3');
+        audio.loop = true;
+        audio.volume = 0.12; // Volumen bajo para no opacar al narrador
+        bgMusicRef.current = audio;
+      }
+      // Intentar reproducir (respetando políticas de autoplay del navegador)
+      bgMusicRef.current.play().catch((err) => {
+        console.log('ℹ️ [Audio] Música de fondo bloqueada por política de autoplay:', err.message);
+      });
+    } else {
+      // Pausar si el sonido está desactivado
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+      }
+    }
+
+    // Limpieza al desmontar el componente
+    return () => {
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+        bgMusicRef.current.currentTime = 0;
+      }
+    };
   }, [soundEnabled]);
 
   // 6. Efecto para sonido y AUTO-MARCADO MÚLTIPLE

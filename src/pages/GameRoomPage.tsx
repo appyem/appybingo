@@ -74,6 +74,7 @@ export function GameRoomPage() {
   
   const prevBallRef = useRef<number | null>(null);
   const soundEnabledRef = useRef(soundEnabled);
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -104,6 +105,32 @@ export function GameRoomPage() {
 
   useEffect(() => { 
     soundEnabledRef.current = soundEnabled; 
+  }, [soundEnabled]);
+
+  // Música de fondo ambiental (volumen bajo, loop, controlada por soundEnabled)
+  useEffect(() => {
+    if (soundEnabled) {
+      if (!bgMusicRef.current) {
+        const audio = new Audio('/fondobingo.mp3');
+        audio.loop = true;
+        audio.volume = 0.12; // Volumen bajo para no opacar al narrador
+        bgMusicRef.current = audio;
+      }
+      bgMusicRef.current.play().catch((err) => {
+        console.log('ℹ️ [Audio] Música de fondo bloqueada por política de autoplay:', err.message);
+      });
+    } else {
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+      }
+    }
+
+    return () => {
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+        bgMusicRef.current.currentTime = 0;
+      }
+    };
   }, [soundEnabled]);
 
   useEffect(() => {
