@@ -350,7 +350,7 @@ export function MyCardsPage() {
         }
         @media (max-width: 767px) {
           .cards-page-wrapper {
-            padding-bottom: 42vh; /* Espacio reservado para el tablero fijo inferior */
+            padding-bottom: 2rem; /* Padding normal al final de la página */
           }
         }
         .mobile-drawn-board {
@@ -359,18 +359,14 @@ export function MyCardsPage() {
         @media (max-width: 767px) {
           .mobile-drawn-board {
             display: block;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(10, 22, 40, 0.98);
+            
+            background: rgba(10, 22, 40, 0.95);
             backdrop-filter: blur(12px);
             border-top: 2px solid rgba(252, 191, 73, 0.4);
-            padding: 0.75rem 0.5rem 2rem 0.5rem; /* Padding extra inferior para zona segura de iOS */
-            z-index: 40;
-            max-height: 40vh;
-            overflow-y: auto;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+            border-radius: 24px 24px 0 0;
+            padding: 1.5rem 0.5rem 3rem 0.5rem; /* Padding extra inferior para zona segura de iOS */
+            margin-top: 2rem;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
           }
           .drawn-board-grid {
             display: grid;
