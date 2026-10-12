@@ -77,39 +77,19 @@ export function MyCardsPage() {
     
     const matrix = card.matrix;
     
-    // Función estricta: solo devuelve true si es 'FREE' o si es un número que está en el Set de marcados
-    const isMarked = (val: unknown) => {
-      if (val === 'FREE') return true;
-      if (typeof val === 'number' && currentMarks.has(val)) return true;
-      return false; // null, undefined, string, etc., NUNCA cuentan como marcados
-    };
-
-    // Verificar filas
+    // REGLA DE CARTÓN LLENO: TODOS los números del cartón (excepto FREE) deben estar marcados.
     for (let r = 0; r < 5; r++) {
-      let full = true;
       for (let c = 0; c < 5; c++) {
-        if (!isMarked(matrix[r][c])) { full = false; break; }
+        const val = matrix[r][c];
+        // Si la celda no es FREE y el número NO está en las marcas, NO es cartón lleno.
+        if (val !== 'FREE' && !(typeof val === 'number' && currentMarks.has(val))) {
+          return false;
+        }
       }
-      if (full) return true;
     }
     
-    // Verificar columnas
-    for (let c = 0; c < 5; c++) {
-      let full = true;
-      for (let r = 0; r < 5; r++) {
-        if (!isMarked(matrix[r][c])) { full = false; break; }
-      }
-      if (full) return true;
-    }
-    
-    // Verificar diagonales
-    let d1 = true, d2 = true;
-    for (let i = 0; i < 5; i++) {
-      if (!isMarked(matrix[i][i])) d1 = false;
-      if (!isMarked(matrix[i][4 - i])) d2 = false;
-    }
-    
-    return d1 || d2;
+    // Si el bucle termina sin retornar false, significa que TODOS los números están marcados.
+    return true;
   }, []);
 
   // 2. Función para CANTAR BINGO (Declarada antes de ser usada en handleMarkNumber)
@@ -367,7 +347,7 @@ export function MyCardsPage() {
 
       <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '500px', margin: '0 auto' }}>
         {cards.map((card, index) => {
-          const currentMarks = markedStates[card.id] || new Set<number>();
+          const currentMarks = (markedStates[card.id] instanceof Set) ? markedStates[card.id] : new Set<number>();
           
           return (
             <div key={card.id} style={{ 
