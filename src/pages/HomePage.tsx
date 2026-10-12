@@ -285,7 +285,7 @@ export function HomePage() {
           {/* Texto de Bienvenida */}
           <div style={{ textAlign: 'center', maxWidth: '48rem' }}>
             <h1 style={{ 
-              fontSize: '3.5rem', 
+              fontSize: 'clamp(2rem, 6vw, 3.5rem)', 
               fontWeight: 900, 
               color: 'white', 
               marginBottom: '1rem', 
@@ -393,75 +393,73 @@ export function HomePage() {
       </div>
 
 
-      {/* MODAL: Organiza tu propio Bingo */}
+            {/* MODAL: Organiza tu propio Bingo (Glassmorphism) */}
       {showOrganizeModal && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 500,
-          background: 'rgba(10, 22, 40, 0.95)',
-          backdropFilter: 'blur(8px)',
+          background: 'rgba(10, 22, 40, 0.85)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '1rem',
           animation: 'fadeIn 0.3s ease-out'
         }}>
           <div style={{
-            background: 'var(--color-bg-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-2xl)',
+            background: 'rgba(26, 26, 36, 0.7)',
+            border: '1px solid rgba(252, 191, 73, 0.2)',
+            borderRadius: '24px',
             width: '100%',
-            maxWidth: '500px',
+            maxWidth: '520px',
             maxHeight: '90vh',
             overflowY: 'auto',
-            padding: '2rem',
+            padding: '2.5rem 2rem',
             position: 'relative',
-            boxShadow: '0 25px 50px rgba(0,0,0,0.5)'
+            boxShadow: '0 25px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)'
           }}>
             <button 
+              className="modal-close-btn"
               onClick={() => setShowOrganizeModal(false)}
-              style={{
-                position: 'absolute', top: '1rem', right: '1rem',
-                background: 'transparent', border: 'none', color: 'var(--color-text-secondary)',
-                fontSize: '1.5rem', cursor: 'pointer', padding: '0.5rem'
-              }}
+              aria-label="Cerrar"
             >
               ✕
             </button>
 
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', marginBottom: '0.5rem', textAlign: 'center' }}>
+            <h2 style={{ fontSize: 'clamp(1.5rem, 4vw, 1.75rem)', fontWeight: 900, color: 'white', marginBottom: '0.5rem', textAlign: 'center' }}>
               🎲 Organiza tu Bingo
             </h2>
-            <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: '2rem', fontSize: '0.9rem' }}>
+            <p style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginBottom: '2rem', fontSize: '0.95rem', lineHeight: 1.5 }}>
               Completa los datos y te contactaremos por WhatsApp para coordinar tu evento.
             </p>
 
             <form onSubmit={handleOrganizeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Nombre del Evento o Juego *</label>
+                <label className="form-label">Nombre del Evento o Juego *</label>
                 <input 
                   type="text" required 
+                  className="glass-input"
                   value={orgForm.eventName}
                   onChange={(e) => setOrgForm({...orgForm, eventName: e.target.value})}
                   placeholder="Ej: Bingo de la Familia Pérez"
-                  style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Valor por Cartón ($) *</label>
+                <label className="form-label">Valor por Cartón ($) *</label>
                 <input 
                   type="number" required min="1000"
+                  className="glass-input"
                   value={orgForm.pricePerCard}
                   onChange={(e) => setOrgForm({...orgForm, pricePerCard: e.target.value})}
                   placeholder="Ej: 5000"
-                  style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Tipo de Premio *</label>
+                <label className="form-label">Tipo de Premio *</label>
                 <select 
+                  className="glass-select"
                   value={orgForm.prizeType}
                   onChange={(e) => setOrgForm({...orgForm, prizeType: e.target.value as 'CASH' | 'PRODUCT', prizeValue: '', prizeName: '', prizeDescription: ''})}
-                  style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
                 >
                   <option value="CASH">💵 Efectivo</option>
                   <option value="PRODUCT">🎁 Producto</option>
@@ -470,92 +468,74 @@ export function HomePage() {
 
               {orgForm.prizeType === 'CASH' ? (
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Valor del Premio ($) *</label>
+                  <label className="form-label">Valor del Premio ($) *</label>
                   <input 
                     type="number" required min="10000"
+                    className="glass-input"
                     value={orgForm.prizeValue}
                     onChange={(e) => setOrgForm({...orgForm, prizeValue: e.target.value})}
                     placeholder="Ej: 500000"
-                    style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
                   />
                 </div>
               ) : (
                 <>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Nombre del Producto *</label>
+                    <label className="form-label">Nombre del Producto *</label>
                     <input 
                       type="text" required
+                      className="glass-input"
                       value={orgForm.prizeName}
                       onChange={(e) => setOrgForm({...orgForm, prizeName: e.target.value})}
                       placeholder="Ej: Smart TV 55 pulgadas"
-                      style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
                     />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Descripción del Producto (Opcional)</label>
+                    <label className="form-label">Descripción del Producto (Opcional)</label>
                     <input 
                       type="text"
+                      className="glass-input"
                       value={orgForm.prizeDescription}
                       onChange={(e) => setOrgForm({...orgForm, prizeDescription: e.target.value})}
                       placeholder="Ej: Marca Samsung, 4K, con garantía"
-                      style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
                     />
                   </div>
                 </>
               )}
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Patrocinador (Opcional)</label>
+                <label className="form-label">Patrocinador (Opcional)</label>
                 <input 
                   type="text"
+                  className="glass-input"
                   value={orgForm.sponsorName}
                   onChange={(e) => setOrgForm({...orgForm, sponsorName: e.target.value})}
                   placeholder="Ej: Supermercados Éxito"
-                  style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
                 />
               </div>
 
-              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#FCBF49', marginBottom: '0.5rem' }}>Tus Datos de Contacto *</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
+                <label className="form-label" style={{ color: '#FCBF49', fontWeight: 700 }}>Tus Datos de Contacto *</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.75rem' }}>
                   <input 
                     type="text" required
+                    className="glass-input"
                     value={orgForm.requesterName}
                     onChange={(e) => setOrgForm({...orgForm, requesterName: e.target.value})}
                     placeholder="Tu nombre completo"
-                    style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
                   />
                   <input 
                     type="tel" required
+                    className="glass-input"
                     value={orgForm.requesterWhatsApp}
                     onChange={(e) => setOrgForm({...orgForm, requesterWhatsApp: e.target.value})}
                     placeholder="Tu número de WhatsApp (Ej: 3001234567)"
-                    style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
                   />
                 </div>
               </div>
 
               <button
                 type="submit"
-                style={{
-                  background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
-                  color: 'white',
-                  fontWeight: 800,
-                  fontSize: '1.125rem',
-                  padding: '1rem',
-                  border: 'none',
-                  borderRadius: 'var(--radius-lg)',
-                  boxShadow: '0 8px 20px rgba(37, 211, 102, 0.3)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  marginTop: '1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(37, 211, 102, 0.4)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(37, 211, 102, 0.3)'; }}
+                className="whatsapp-submit-btn"
               >
                 📱 Enviar Solicitud por WhatsApp
               </button>
@@ -611,6 +591,87 @@ export function HomePage() {
         }
         .cta-button-premium:active {
           transform: translateY(0) scale(0.98);
+        }
+        .form-label {
+          display: block;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.8);
+          margin-bottom: 0.5rem;
+        }
+        .glass-input {
+          width: 100%;
+          padding: 0.875rem 1rem;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          color: white;
+          font-size: 1rem;
+          outline: none;
+          transition: all 0.2s ease;
+          box-sizing: border-box;
+        }
+        .glass-input:focus {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: #FCBF49;
+          box-shadow: 0 0 0 3px rgba(252, 191, 73, 0.1);
+        }
+        .glass-input::placeholder {
+          color: rgba(255, 255, 255, 0.4);
+        }
+        .glass-select {
+          width: 100%;
+          padding: 0.875rem 1rem;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          color: white;
+          font-size: 1rem;
+          outline: none;
+          cursor: pointer;
+          box-sizing: border-box;
+        }
+        .glass-select:focus {
+          border-color: #FCBF49;
+        }
+        .glass-select option {
+          background: #1a1a24;
+          color: white;
+        }
+        .modal-close-btn {
+          position: absolute; top: 1rem; right: 1rem;
+          background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
+          color: white; border-radius: 50%; width: 36px; height: 36px;
+          font-size: 1.25rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          transition: all 0.2s;
+        }
+        .modal-close-btn:hover {
+          background: rgba(255,255,255,0.1);
+        }
+        .whatsapp-submit-btn {
+          width: 100%;
+          background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+          color: white;
+          font-weight: 800;
+          font-size: 1.125rem;
+          padding: 1rem;
+          border: none;
+          border-radius: 12px;
+          box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+          cursor: pointer;
+          transition: all 0.3s ease;
+          margin-top: 1rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+        }
+        .whatsapp-submit-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 24px rgba(37, 211, 102, 0.4);
+        }
+        .whatsapp-submit-btn:active {
+          transform: translateY(0);
         }
       `}</style>
     </div>
