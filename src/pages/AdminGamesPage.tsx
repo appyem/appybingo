@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { AdminLayout } from '../components/admin/AdminLayout';
 import { Button } from '../components/ui/Button';
 import { gameRepository, cardRepository } from '../repositories';
 import { Trash2 } from 'lucide-react';
-import type { Game, GameState } from '@bingo-types/index';
+import type { Game, GameState, Card } from '@bingo-types/index';
 
 export function AdminGamesPage() {
   const [games, setGames] = useState<Game[]>([]);
@@ -21,8 +21,11 @@ export function AdminGamesPage() {
   const [creating, setCreating] = useState(false);
   const [drawing, setDrawing] = useState<string | null>(null);
   const [deletingGame, setDeletingGame] = useState<string | null>(null);
+  const [autoDrawGameId, setAutoDrawGameId] = useState<string | null>(null);
+  const autoDrawIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isDrawingRef = useRef(false);
 
-  const loadGames = async () => {
+  const loadGames = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -35,12 +38,57 @@ export function AdminGamesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadGames();
-  }, []);
+  }, [loadGames]);
+  // Efecto para el sorteo automático cada 12 segundos
+  useEffect(() => {
+    if (autoDrawGameId) {
+      autoDrawIntervalRef.current = setInterval(async () => {
+        if (isDrawingRef.current) return; // Evitar solapamiento de sorteos
+        
+        const currentGameId = autoDrawGameId;
+        isDrawingRef.current = true;
+        setDrawing(currentGameId);
+
+        try {
+          const allCards = await cardRepository.getCards();
+          const hasWinner = allCards.some((c: Card) => c.gameId === currentGameId && c.status === 'WINNER');
+          
+          if (hasWinner) {
+            setAutoDrawGameId(null);
+            alert('⚠️ ¡ATENCIÓN! Ya existe un ganador en esta partida. Modo automático desactivado.');
+          } else {
+            await gameRepository.drawNextNumber(currentGameId);
+            await loadGames();
+          }
+        } catch (err: unknown) {
+          console.error('Error en sorteo automático:', err);
+        } finally {
+          isDrawingRef.current = false;
+          setDrawing(null);
+        }
+      }, 12000);
+    } else {
+      if (autoDrawIntervalRef.current) {
+        clearInterval(autoDrawIntervalRef.current);
+        autoDrawIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (autoDrawIntervalRef.current) {
+        clearInterval(autoDrawIntervalRef.current);
+        autoDrawIntervalRef.current = null;
+      }
+      isDrawingRef.current = false;
+      setDrawing(null);
+    };
+  }, [autoDrawGameId, loadGames]);
+
 
     const handleCreateGame = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -441,14 +489,37 @@ export function AdminGamesPage() {
                                 ) : (
                                   <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Sin bolas</span>
                                 )}
-                                <Button 
-                                  variant="primary" 
-                                  size="sm" 
-                                  onClick={() => handleDrawNumber(g.id)}
-                                  disabled={drawing === g.id || (g.drawnNumbers?.length || 0) >= 75}
-                                >
-                                  {drawing === g.id ? 'Sorteando...' : (g.drawnNumbers?.length || 0) >= 75 ? 'Finalizado' : 'Sacar Bola'}
-                                </Button>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', width: '100%' }}>
+                                  <Button 
+                                    variant="primary" 
+                                    size="sm" 
+                                    onClick={() => handleDrawNumber(g.id)}
+                                    disabled={drawing === g.id || autoDrawGameId === g.id || (g.drawnNumbers?.length || 0) >= 75}
+                                    style={{ width: '100%' }}
+                                  >
+                                    {drawing === g.id ? 'Sorteando...' : (g.drawnNumbers?.length || 0) >= 75 ? 'Finalizado' : 'Sacar Bola'}
+                                  </Button>
+                                  <Button 
+                                    variant={autoDrawGameId === g.id ? "ghost" : "secondary"} 
+                                    size="sm" 
+                                    onClick={() => {
+                                      if (autoDrawGameId === g.id) {
+                                        setAutoDrawGameId(null);
+                                      } else {
+                                        setAutoDrawGameId(g.id);
+                                      }
+                                    }}
+                                    disabled={(g.drawnNumbers?.length || 0) >= 75}
+                                    style={{ 
+                                      width: '100%', 
+                                      fontSize: '0.75rem',
+                                      color: autoDrawGameId === g.id ? 'var(--color-warning)' : 'var(--color-text-secondary)',
+                                      borderColor: autoDrawGameId === g.id ? 'var(--color-warning)' : 'var(--color-border)'
+                                    }}
+                                  >
+                                    {autoDrawGameId === g.id ? '⏸️ Pausar Auto' : '🤖 Activar Auto (12s)'}
+                                  </Button>
+                                </div>
                               </div>
                             ) : (
                               <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
