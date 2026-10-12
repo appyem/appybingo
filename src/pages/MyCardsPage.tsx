@@ -44,6 +44,8 @@ const BingoBall3D = ({ number, size = 80 }: { number: number; size?: number }) =
   );
 };
 
+const bgMusicTracks = ['/fondobingo.mp3', '/fondobingo2.mp3', '/fondobingo3.mp3', '/fondobingo4.mp3'] as const;
+
 export function MyCardsPage() {
   const hash = window.location.hash;
   const requestId = hash.startsWith('#/mis-cartones/') ? hash.replace('#/mis-cartones/', '').trim() : null;
@@ -60,6 +62,7 @@ export function MyCardsPage() {
   const [gameHasWinner, setGameHasWinner] = useState(false);
   const [winnerName, setWinnerName] = useState<string>('');
   const [showTooLateMessage, setShowTooLateMessage] = useState(false);
+  const [winningCardNumber, setWinningCardNumber] = useState<string>('');
   
   
   const formatCurrency = (value: number) => {
@@ -110,6 +113,8 @@ export function MyCardsPage() {
         setGameHasWinner(true);
         const req = await requestRepository.getRequestById((cards.find(c => c.id === cardId)?.requestId || ''));
         if (req) setWinnerName(req.playerName);
+        const winCard = cards.find(c => c.id === cardId);
+        if (winCard) setWinningCardNumber(winCard.cardNumberFormatted);
         
         if (soundEnabledRef.current) {
           const utterance = new SpeechSynthesisUtterance('¡Bingo! ¡Felicidades, tenemos un ganador!');
@@ -214,28 +219,35 @@ export function MyCardsPage() {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
 
-  // 5.1 Música de fondo (volumen bajo, loop, controlada por soundEnabled)
+  // 5.1 Música de fondo (volumen bajo, loop, controlada por soundEnabled, selección aleatoria)
   useEffect(() => {
     if (soundEnabled) {
-      // Crear instancia de audio solo si no existe
       if (!bgMusicRef.current) {
-        const audio = new Audio('/fondobingo.mp3');
+        const randomTrack = bgMusicTracks[Math.floor(Math.random() * bgMusicTracks.length)];
+        const audio = new Audio(randomTrack);
         audio.loop = true;
-        audio.volume = 0.12; // Volumen bajo para no opacar al narrador
+        audio.volume = 0.12;
         bgMusicRef.current = audio;
+      } else {
+        // Elegir una canción diferente a la actual para variar la experiencia
+        const currentSrc = bgMusicRef.current.src;
+        const availableTracks = bgMusicTracks.filter(t => !currentSrc.endsWith(t) && !currentSrc.includes(t));
+        const randomTrack = availableTracks.length > 0 
+          ? availableTracks[Math.floor(Math.random() * availableTracks.length)]
+          : bgMusicTracks[Math.floor(Math.random() * bgMusicTracks.length)];
+        
+        bgMusicRef.current.src = randomTrack;
       }
-      // Intentar reproducir (respetando políticas de autoplay del navegador)
+      
       bgMusicRef.current.play().catch((err) => {
         console.log('ℹ️ [Audio] Música de fondo bloqueada por política de autoplay:', err.message);
       });
     } else {
-      // Pausar si el sonido está desactivado
       if (bgMusicRef.current) {
         bgMusicRef.current.pause();
       }
     }
 
-    // Limpieza al desmontar el componente
     return () => {
       if (bgMusicRef.current) {
         bgMusicRef.current.pause();
@@ -294,6 +306,7 @@ export function MyCardsPage() {
           setGameHasWinner(true);
           const req = await requestRepository.getRequestById(winningCard.requestId);
           if (req) setWinnerName(req.playerName);
+          setWinningCardNumber(winningCard.cardNumberFormatted);
         }
       };
       checkWinner();
@@ -607,11 +620,11 @@ export function MyCardsPage() {
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(10, 22, 40, 0.98)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          zIndex: 400, animation: 'fadeIn 0.5s ease-out', padding: '2rem', textAlign: 'center'
+          zIndex: 400, animation: 'fadeIn 0.5s ease-out', padding: '2rem', textAlign: 'center', overflowY: 'auto'
         }}>
-          <div style={{ fontSize: '5rem', marginBottom: '1.5rem', animation: 'shake 0.5s', filter: 'grayscale(0.3)' }}>⏱️</div>
-          <h1 style={{ fontSize: '2.25rem', fontWeight: 900, color: '#E63946', marginBottom: '1rem', textShadow: '0 4px 12px rgba(230,57,70,0.5)' }}>
-            ¡Te faltó rapidez!
+          <div style={{ fontSize: 'clamp(4rem, 10vw, 5rem)', marginBottom: '1.5rem', animation: 'shake 0.5s', filter: 'grayscale(0.3)' }}>⏱️</div>
+          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', fontWeight: 900, color: '#E63946', marginBottom: '1rem', textShadow: '0 4px 12px rgba(230,57,70,0.5)' }}>
+            ¡Casi lo logras!
           </h1>
           <div style={{ 
             padding: '1.5rem 2rem', 
@@ -624,50 +637,116 @@ export function MyCardsPage() {
             <p style={{ fontSize: '1.125rem', color: '#d4d4e8', marginBottom: '1rem', lineHeight: 1.6, fontWeight: 500 }}>
               Otro jugador cantó <strong style={{ color: '#FCBF49' }}>BINGO</strong> unos milisegundos antes que tú.
             </p>
-            <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: '1rem' }}>
               El premio de <strong style={{ color: '#FCBF49' }}>{game?.prizeType === 'PRODUCT' ? (game.prizeName || 'el producto') : (game?.prizeValue ? formatCurrency(game.prizeValue) : 'esta partida')}</strong> ya tiene dueño.
             </p>
+            <p style={{ fontSize: '1.125rem', color: '#FCBF49', fontWeight: 700 }}>
+              ¡No te desanimes! La suerte puede estar de tu lado en la próxima partida. 🍀
+            </p>
           </div>
-          <p style={{ fontSize: '1.25rem', color: '#FCBF49', fontWeight: 700, marginBottom: '2rem', maxWidth: '400px' }}>
-            ¡No te desanimes! La suerte puede estar de tu lado en la próxima partida. 🍀
-          </p>
-          <button 
-            onClick={() => window.location.hash = '#/'}
-            style={{
-              padding: '1rem 2.5rem', 
-              background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
-              color: '#0A1628', 
-              border: 'none', 
-              borderRadius: '9999px', 
-              fontSize: '1.125rem',
-              fontWeight: 800, 
-              cursor: 'pointer', 
-              boxShadow: '0 10px 30px rgba(252,191,73,0.4)',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
-          >
-            Volver al Inicio
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: '300px' }}>
+            <button 
+              onClick={() => window.location.hash = '#/solicitar'}
+              style={{
+                padding: '1rem 2rem', 
+                background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
+                color: '#0A1628', 
+                border: 'none', 
+                borderRadius: '9999px', 
+                fontSize: '1.125rem',
+                fontWeight: 800, 
+                cursor: 'pointer', 
+                boxShadow: '0 10px 30px rgba(252,191,73,0.4)',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
+            >
+              🎟️ Jugar Otra Partida
+            </button>
+            <button 
+              onClick={() => window.location.hash = '#/'}
+              style={{
+                padding: '1rem 2rem', 
+                background: 'rgba(255,255,255,0.1)',
+                color: 'white', 
+                border: '1px solid rgba(255,255,255,0.2)', 
+                borderRadius: '9999px', 
+                fontSize: '1rem',
+                fontWeight: 600, 
+                cursor: 'pointer', 
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+            >
+              🏠 Volver al Inicio
+            </button>
+          </div>
         </div>
       )}
 
       {gameHasWinner && !showTooLateMessage && (
         <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          position: 'fixed', inset: 0, zIndex: 300,
           background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 50%, #E63946 100%)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          zIndex: 300, animation: 'fadeIn 0.5s ease-out', overflow: 'hidden', padding: '2rem', textAlign: 'center'
+          animation: 'popIn 0.5s ease-out', padding: '2rem', textAlign: 'center', overflowY: 'auto'
         }}>
           <img src="/logo.png" alt="AppyBingo" style={{ position: 'absolute', width: '80%', maxWidth: '500px', opacity: 0.15, transform: 'rotate(-15deg)', pointerEvents: 'none' }} />
-          <div style={{ fontSize: '6rem', marginBottom: '1rem', animation: 'bingo-bounce 0.6s infinite', zIndex: 1 }}>🏆</div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: 'white', textShadow: '0 4px 8px rgba(0,0,0,0.3)', marginBottom: '0.5rem', zIndex: 1 }}>
+          <div style={{ fontSize: 'clamp(4rem, 10vw, 6rem)', marginBottom: '1rem', animation: 'bingo-bounce 0.6s infinite', zIndex: 1 }}>🏆</div>
+          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 900, color: 'white', textShadow: '0 4px 8px rgba(0,0,0,0.3)', marginBottom: '0.5rem', zIndex: 1 }}>
             ¡TENEMOS UN GANADOR!
           </h1>
-          <p style={{ fontSize: '1.5rem', color: 'white', zIndex: 1, fontWeight: 600, marginBottom: '1rem' }}>
-            ¡Felicidades <strong style={{ fontSize: '1.75rem', color: '#0A1628' }}>{winnerName || 'Jugador'}</strong>!
+          <p style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)', color: 'white', zIndex: 1, fontWeight: 600, marginBottom: '1.5rem' }}>
+            ¡Felicidades <strong style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)', color: '#0A1628' }}>{winnerName || 'Jugador'}</strong>!
           </p>
+          
+          <div style={{ 
+            background: 'rgba(255,255,255,0.2)', 
+            borderRadius: 'var(--radius-xl)', 
+            backdropFilter: 'blur(10px)', 
+            border: '2px solid rgba(255,255,255,0.4)',
+            padding: '1.5rem 2rem',
+            marginBottom: '2rem',
+            zIndex: 1,
+            width: '100%',
+            maxWidth: '400px'
+          }}>
+            <div style={{ fontSize: '1rem', color: 'white', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem' }}>🎟️ Cartón Ganador</div>
+            <div style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: 900, color: '#0A1628', fontFamily: 'monospace', marginBottom: '1rem' }}>
+              {winningCardNumber || '---'}
+            </div>
+            <div style={{ fontSize: '1rem', color: 'white', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem' }}>🎁 Premio</div>
+            <div style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)', fontWeight: 800, color: '#0A1628' }}>
+              {game?.prizeType === 'PRODUCT' ? (game.prizeName || 'Producto') : (game?.prizeValue ? formatCurrency(game.prizeValue) : 'Premio Sorpresa')}
+            </div>
+          </div>
+
+          <button 
+            onClick={() => window.location.hash = '#/'}
+            style={{
+              padding: '1rem 2.5rem', 
+              background: '#0A1628',
+              color: '#FCBF49', 
+              border: 'none', 
+              borderRadius: '9999px', 
+              fontSize: '1.125rem',
+              fontWeight: 800, 
+              cursor: 'pointer', 
+              boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+              transition: 'all 0.3s ease',
+              zIndex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              margin: '0 auto'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
+          >
+            🏠 Volver al Inicio
+          </button>
         </div>
       )}
     </div>

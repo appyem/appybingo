@@ -53,6 +53,8 @@ const BingoBall3D = ({ number, size = 80, isGiant = false }: { number: number; s
   );
 };
 
+const bgMusicTracks = ['/fondobingo.mp3', '/fondobingo2.mp3', '/fondobingo3.mp3', '/fondobingo4.mp3'] as const;
+
 export function GameRoomPage() {
   const initialGameId = window.location.hash.replace('#/game/', '').trim();
   
@@ -107,15 +109,25 @@ export function GameRoomPage() {
     soundEnabledRef.current = soundEnabled; 
   }, [soundEnabled]);
 
-  // Música de fondo ambiental (volumen bajo, loop, controlada por soundEnabled)
+  // Música de fondo ambiental (volumen bajo, loop, controlada por soundEnabled, selección aleatoria)
   useEffect(() => {
     if (soundEnabled) {
       if (!bgMusicRef.current) {
-        const audio = new Audio('/fondobingo.mp3');
+        const randomTrack = bgMusicTracks[Math.floor(Math.random() * bgMusicTracks.length)];
+        const audio = new Audio(randomTrack);
         audio.loop = true;
-        audio.volume = 0.12; // Volumen bajo para no opacar al narrador
+        audio.volume = 0.12;
         bgMusicRef.current = audio;
+      } else {
+        const currentSrc = bgMusicRef.current.src;
+        const availableTracks = bgMusicTracks.filter(t => !currentSrc.endsWith(t) && !currentSrc.includes(t));
+        const randomTrack = availableTracks.length > 0 
+          ? availableTracks[Math.floor(Math.random() * availableTracks.length)]
+          : bgMusicTracks[Math.floor(Math.random() * bgMusicTracks.length)];
+        
+        bgMusicRef.current.src = randomTrack;
       }
+      
       bgMusicRef.current.play().catch((err) => {
         console.log('ℹ️ [Audio] Música de fondo bloqueada por política de autoplay:', err.message);
       });
@@ -559,17 +571,62 @@ export function GameRoomPage() {
           position: 'fixed', inset: 0, zIndex: 300,
           background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 50%, #E63946 100%)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          animation: 'popIn 0.5s ease-out', padding: '2rem', textAlign: 'center'
+          animation: 'popIn 0.5s ease-out', padding: '2rem', textAlign: 'center', overflowY: 'auto'
         }}>
-          <div style={{ fontSize: '8rem', marginBottom: '1rem', animation: 'float-bg 2s ease-in-out infinite' }}>🏆</div>
-          <h1 style={{ fontSize: 'clamp(32px, 5vh, 64px)', fontWeight: 900, color: 'white', textShadow: '0 4px 8px rgba(0,0,0,0.3)', marginBottom: '1rem' }}>¡TENEMOS UN GANADOR!</h1>
-          <p style={{ fontSize: 'clamp(20px, 3vh, 32px)', color: 'white', fontWeight: 600, marginBottom: '2rem' }}>
-            ¡Felicidades <strong style={{ color: '#0A1628' }}>{winner.playerName}</strong>!
+          <img src="/logo.png" alt="AppyBingo" style={{ position: 'absolute', width: '80%', maxWidth: '500px', opacity: 0.15, transform: 'rotate(-15deg)', pointerEvents: 'none' }} />
+          <div style={{ fontSize: 'clamp(4rem, 10vw, 6rem)', marginBottom: '1rem', animation: 'bingo-bounce 0.6s infinite', zIndex: 1 }}>🏆</div>
+          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 900, color: 'white', textShadow: '0 4px 8px rgba(0,0,0,0.3)', marginBottom: '0.5rem', zIndex: 1 }}>
+            ¡TENEMOS UN GANADOR!
+          </h1>
+          <p style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)', color: 'white', zIndex: 1, fontWeight: 600, marginBottom: '1.5rem' }}>
+            ¡Felicidades <strong style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)', color: '#0A1628' }}>{winner.playerName || 'Jugador'}</strong>!
           </p>
-          <div style={{ padding: '2rem 4rem', background: 'rgba(255,255,255,0.2)', borderRadius: '24px', backdropFilter: 'blur(10px)', border: '2px solid rgba(255,255,255,0.4)' }}>
-            <div style={{ fontSize: '1rem', color: 'white', textTransform: 'uppercase', fontWeight: 600, marginBottom: '0.5rem' }}>Cartón Ganador</div>
-            <div style={{ fontSize: 'clamp(32px, 5vh, 56px)', fontWeight: 900, color: '#0A1628', fontFamily: 'monospace' }}>{winner.cardNumber}</div>
+          
+          <div style={{ 
+            background: 'rgba(255,255,255,0.2)', 
+            borderRadius: 'var(--radius-xl)', 
+            backdropFilter: 'blur(10px)', 
+            border: '2px solid rgba(255,255,255,0.4)',
+            padding: '1.5rem 2rem',
+            marginBottom: '2rem',
+            zIndex: 1,
+            width: '100%',
+            maxWidth: '400px'
+          }}>
+            <div style={{ fontSize: '1rem', color: 'white', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem' }}>🎟️ Cartón Ganador</div>
+            <div style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: 900, color: '#0A1628', fontFamily: 'monospace', marginBottom: '1rem' }}>
+              {winner.cardNumber}
+            </div>
+            <div style={{ fontSize: '1rem', color: 'white', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem' }}>🎁 Premio</div>
+            <div style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)', fontWeight: 800, color: '#0A1628' }}>
+              {game?.prizeType === 'PRODUCT' ? (game.prizeName || 'Producto') : (game?.prizeValue ? formatCurrency(game.prizeValue) : 'Premio Sorpresa')}
+            </div>
           </div>
+
+          <button 
+            onClick={() => window.location.hash = '#/'}
+            style={{
+              padding: '1rem 2.5rem', 
+              background: '#0A1628',
+              color: '#FCBF49', 
+              border: 'none', 
+              borderRadius: '9999px', 
+              fontSize: '1.125rem',
+              fontWeight: 800, 
+              cursor: 'pointer', 
+              boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+              transition: 'all 0.3s ease',
+              zIndex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              margin: '0 auto'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
+          >
+            🏠 Volver al Inicio
+          </button>
         </div>
       )}
     </>
