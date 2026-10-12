@@ -318,7 +318,7 @@ export function MyCardsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--color-bg-base)', paddingBottom: '4rem' }}>
+    <div className="cards-page-wrapper">
       <style>{`
         @keyframes bounce3d { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-15px) scale(1.05); } }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
@@ -340,6 +340,43 @@ export function MyCardsPage() {
         @keyframes trophy-pulse {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.2); }
+        }
+
+
+        .cards-page-wrapper {
+          min-height: 100vh;
+          background: var(--color-bg-base);
+          padding-bottom: 4rem;
+        }
+        @media (max-width: 767px) {
+          .cards-page-wrapper {
+            padding-bottom: 42vh; /* Espacio reservado para el tablero fijo inferior */
+          }
+        }
+        .mobile-drawn-board {
+          display: none;
+        }
+        @media (max-width: 767px) {
+          .mobile-drawn-board {
+            display: block;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 22, 40, 0.98);
+            backdrop-filter: blur(12px);
+            border-top: 2px solid rgba(252, 191, 73, 0.4);
+            padding: 0.75rem 0.5rem 2rem 0.5rem; /* Padding extra inferior para zona segura de iOS */
+            z-index: 40;
+            max-height: 40vh;
+            overflow-y: auto;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+          }
+          .drawn-board-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 3px;
+          }
         }
 
       `}</style>
@@ -528,6 +565,46 @@ export function MyCardsPage() {
           );
         })}
       </div>
+
+
+      {/* TABLERO DE NÚMEROS SORTEADOS (Solo Móvil) */}
+      {game && (game.state === 'RUNNING' || game.state === 'PAUSED' || game.state === 'FINISHED') && (
+        <div className="mobile-drawn-board">
+          <div style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: 800, color: '#FCBF49', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Tablero de Sorteo ({game.drawnNumbers?.length || 0}/75)
+          </div>
+          <div className="drawn-board-grid">
+            {['B', 'I', 'N', 'G', 'O'].map((letter, colIndex) => {
+              const startNum = colIndex * 15 + 1;
+              const colColor = letter === 'B' ? '#E63946' : letter === 'I' ? '#F77F00' : letter === 'N' ? '#2A9D8F' : letter === 'G' ? '#0077B6' : '#9B5DE5';
+              return (
+                <div key={letter} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <div style={{ textAlign: 'center', fontWeight: 900, fontSize: '0.65rem', color: colColor, paddingBottom: '2px', borderBottom: `2px solid ${colColor}` }}>{letter}</div>
+                  {Array.from({ length: 15 }, (_, i) => {
+                    const num = startNum + i;
+                    const isDrawn = game?.drawnNumbers?.includes(num);
+                    return (
+                      <div key={num} style={{
+                        textAlign: 'center',
+                        fontSize: '0.55rem',
+                        fontWeight: 700,
+                        color: isDrawn ? 'white' : 'rgba(255,255,255,0.25)',
+                        background: isDrawn ? colColor : 'rgba(255,255,255,0.03)',
+                        borderRadius: '3px',
+                        padding: '3px 0',
+                        transition: 'all 0.3s',
+                        border: isDrawn ? '1px solid rgba(255,255,255,0.3)' : '1px solid transparent'
+                      }}>
+                        {num}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {showTooLateMessage && (
         <div style={{
