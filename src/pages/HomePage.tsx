@@ -12,7 +12,8 @@ const BingoBall3D = ({ number, color, size = 80, delay = 0, x, y }: {
   x: string;
   y: string;
 }) => {
-  return (
+  
+return (
     <div
       className="bingo-ball-3d"
       style={{
@@ -155,6 +156,18 @@ const Sparkle = ({ x, y, size, delay }: { x: string; y: string; size: number; de
 export function HomePage() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showOrganizeModal, setShowOrganizeModal] = useState(false);
+  const [orgForm, setOrgForm] = useState({
+    eventName: '',
+    pricePerCard: '',
+    prizeType: 'CASH' as 'CASH' | 'PRODUCT',
+    prizeValue: '',
+    prizeName: '',
+    prizeDescription: '',
+    sponsorName: '',
+    requesterName: '',
+    requesterWhatsApp: ''
+  });
 
   useEffect(() => {
     gameRepository.getGames().then(data => {
@@ -168,6 +181,31 @@ export function HomePage() {
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
+  };
+
+  const handleOrganizeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // ⚠️ IMPORTANTE: Reemplaza este número con tu número de WhatsApp real 
+    // (código de país + número, sin espacios ni signos +). Ejemplo Colombia: 573001234567
+    const adminWhatsApp = "573000000000"; 
+    
+    const prizeDetails = orgForm.prizeType === 'CASH' 
+      ? `Efectivo: ${formatCurrency(Number(orgForm.prizeValue))}`
+      : `Producto: ${orgForm.prizeName}${orgForm.prizeDescription ? ' (' + orgForm.prizeDescription + ')' : ''}`;
+
+    const message = `¡Hola! Quiero organizar mi propio Bingo en AppyBingo. Aquí están los detalles:\n\n` +
+      `📌 *Nombre del Evento:* ${orgForm.eventName}\n` +
+      `💰 *Valor por cartón:* ${formatCurrency(Number(orgForm.pricePerCard))}\n` +
+      `🎁 *Premio:* ${prizeDetails}\n` +
+      `🤝 *Patrocinador:* ${orgForm.sponsorName || 'Ninguno'}\n\n` +
+      `👤 *Datos del Solicitante:*\n` +
+      `Nombre: ${orgForm.requesterName}\n` +
+      `WhatsApp: ${orgForm.requesterWhatsApp}\n\n` +
+      `¡Quedo atento a su respuesta para coordinar!`;
+
+    const encodedMessage = encodeURIComponent(message);
+    window.location.href = `https://api.whatsapp.com/send?phone=${adminWhatsApp}&text=${encodedMessage}`;
   };
 
   return (
@@ -279,20 +317,17 @@ export function HomePage() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const firstUpcoming = upcomingGames[0];
-                if (firstUpcoming) {
-                  window.location.hash = '#/solicitar/' + firstUpcoming.id;
-                } else {
-                  window.location.hash = '#solicitar';
-                }
+                setShowOrganizeModal(true);
               }}
               className="cta-button-premium"
               style={{
                 background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
                 color: '#0A1628',
                 fontWeight: 800,
-                fontSize: '1.25rem',
-                padding: '1.25rem 3rem',
+                fontSize: 'clamp(1rem, 4vw, 1.25rem)',
+                padding: '1rem 2rem',
+                width: '100%',
+                maxWidth: '400px',
                 border: 'none',
                 borderRadius: '9999px',
                 boxShadow: '0 10px 30px rgba(252,191,73,0.4)',
@@ -303,9 +338,13 @@ export function HomePage() {
                 fontFamily: 'inherit',
                 position: 'relative',
                 zIndex: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
               }}
             >
-              🎟️ Solicitar Cartones Ahora
+              🎲 Organiza tu propio Bingo
             </button>
           </div>
         </div>
@@ -352,6 +391,178 @@ export function HomePage() {
           </div>
         )}
       </div>
+
+
+      {/* MODAL: Organiza tu propio Bingo */}
+      {showOrganizeModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 500,
+          background: 'rgba(10, 22, 40, 0.95)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1rem',
+          animation: 'fadeIn 0.3s ease-out'
+        }}>
+          <div style={{
+            background: 'var(--color-bg-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-2xl)',
+            width: '100%',
+            maxWidth: '500px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            padding: '2rem',
+            position: 'relative',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.5)'
+          }}>
+            <button 
+              onClick={() => setShowOrganizeModal(false)}
+              style={{
+                position: 'absolute', top: '1rem', right: '1rem',
+                background: 'transparent', border: 'none', color: 'var(--color-text-secondary)',
+                fontSize: '1.5rem', cursor: 'pointer', padding: '0.5rem'
+              }}
+            >
+              ✕
+            </button>
+
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: 'white', marginBottom: '0.5rem', textAlign: 'center' }}>
+              🎲 Organiza tu Bingo
+            </h2>
+            <p style={{ color: 'var(--color-text-secondary)', textAlign: 'center', marginBottom: '2rem', fontSize: '0.9rem' }}>
+              Completa los datos y te contactaremos por WhatsApp para coordinar tu evento.
+            </p>
+
+            <form onSubmit={handleOrganizeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Nombre del Evento o Juego *</label>
+                <input 
+                  type="text" required 
+                  value={orgForm.eventName}
+                  onChange={(e) => setOrgForm({...orgForm, eventName: e.target.value})}
+                  placeholder="Ej: Bingo de la Familia Pérez"
+                  style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Valor por Cartón ($) *</label>
+                <input 
+                  type="number" required min="1000"
+                  value={orgForm.pricePerCard}
+                  onChange={(e) => setOrgForm({...orgForm, pricePerCard: e.target.value})}
+                  placeholder="Ej: 5000"
+                  style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Tipo de Premio *</label>
+                <select 
+                  value={orgForm.prizeType}
+                  onChange={(e) => setOrgForm({...orgForm, prizeType: e.target.value as 'CASH' | 'PRODUCT', prizeValue: '', prizeName: '', prizeDescription: ''})}
+                  style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
+                >
+                  <option value="CASH">💵 Efectivo</option>
+                  <option value="PRODUCT">🎁 Producto</option>
+                </select>
+              </div>
+
+              {orgForm.prizeType === 'CASH' ? (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Valor del Premio ($) *</label>
+                  <input 
+                    type="number" required min="10000"
+                    value={orgForm.prizeValue}
+                    onChange={(e) => setOrgForm({...orgForm, prizeValue: e.target.value})}
+                    placeholder="Ej: 500000"
+                    style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Nombre del Producto *</label>
+                    <input 
+                      type="text" required
+                      value={orgForm.prizeName}
+                      onChange={(e) => setOrgForm({...orgForm, prizeName: e.target.value})}
+                      placeholder="Ej: Smart TV 55 pulgadas"
+                      style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Descripción del Producto (Opcional)</label>
+                    <input 
+                      type="text"
+                      value={orgForm.prizeDescription}
+                      onChange={(e) => setOrgForm({...orgForm, prizeDescription: e.target.value})}
+                      placeholder="Ej: Marca Samsung, 4K, con garantía"
+                      style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
+                    />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Patrocinador (Opcional)</label>
+                <input 
+                  type="text"
+                  value={orgForm.sponsorName}
+                  onChange={(e) => setOrgForm({...orgForm, sponsorName: e.target.value})}
+                  placeholder="Ej: Supermercados Éxito"
+                  style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
+                />
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: '#FCBF49', marginBottom: '0.5rem' }}>Tus Datos de Contacto *</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <input 
+                    type="text" required
+                    value={orgForm.requesterName}
+                    onChange={(e) => setOrgForm({...orgForm, requesterName: e.target.value})}
+                    placeholder="Tu nombre completo"
+                    style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
+                  />
+                  <input 
+                    type="tel" required
+                    value={orgForm.requesterWhatsApp}
+                    onChange={(e) => setOrgForm({...orgForm, requesterWhatsApp: e.target.value})}
+                    placeholder="Tu número de WhatsApp (Ej: 3001234567)"
+                    style={{ width: '100%', padding: '0.875rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '1rem' }}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                style={{
+                  background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                  color: 'white',
+                  fontWeight: 800,
+                  fontSize: '1.125rem',
+                  padding: '1rem',
+                  border: 'none',
+                  borderRadius: 'var(--radius-lg)',
+                  boxShadow: '0 8px 20px rgba(37, 211, 102, 0.3)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  marginTop: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 24px rgba(37, 211, 102, 0.4)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(37, 211, 102, 0.3)'; }}
+              >
+                📱 Enviar Solicitud por WhatsApp
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes bounce3d {
