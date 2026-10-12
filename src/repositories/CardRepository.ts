@@ -11,6 +11,8 @@ export interface CardRepository {
   existsVisibleNumber(gameId: GameId, visibleNumber: string): Promise<boolean>;
   updateCardOpenStatus(cardId: CardId, deviceId: string): Promise<void>;
   deleteCard(cardId: CardId): Promise<void>;
+  deleteCardsByGameId(gameId: GameId): Promise<void>;
+  deleteAllCards(): Promise<void>;
   markNumber(cardId: CardId, number: number): Promise<void>;
   claimBingo(cardId: CardId): Promise<{ success: boolean; alreadyWon?: boolean }>;
 }

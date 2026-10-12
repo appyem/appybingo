@@ -94,6 +94,18 @@ export class MockCardRepository implements CardRepository {
     
     return { success: true };
   }
+
+  async deleteCardsByGameId(gameId: string): Promise<void> {
+    // En el mock, simplemente simulamos la eliminación exitosa
+    console.log(`[Mock] Cartones del juego ${gameId} eliminados.`);
+    return Promise.resolve();
+  }
+
+  async deleteAllCards(): Promise<void> {
+    console.log('[Mock] Todos los cartones eliminados.');
+    return Promise.resolve();
+  }
+
 }
 
 export const cardRepository = new MockCardRepository();

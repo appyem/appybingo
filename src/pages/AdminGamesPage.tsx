@@ -114,6 +114,17 @@ export function AdminGamesPage() {
     
     try {
       await gameRepository.updateGameState(game.id, newState);
+      
+      // LIMPIEZA AUTOMÁTICA DE CARTONES: Al finalizar o cancelar, eliminar todos los cartones del juego
+      if (newState === 'FINISHED' || newState === 'CANCELLED') {
+        try {
+          await cardRepository.deleteCardsByGameId(game.id);
+          console.log(`✅ [Limpieza] Todos los cartones del juego "${game.name}" han sido eliminados automáticamente.`);
+        } catch (cleanupErr) {
+          console.warn('⚠️ No se pudieron eliminar los cartones automáticamente:', cleanupErr);
+        }
+      }
+      
       await loadGames();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Desconocido';
@@ -261,6 +272,33 @@ export function AdminGamesPage() {
       <AdminLayout currentPath="/admin/games">
         <div style={{ padding: '2rem' }}>
           <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: 'white', marginBottom: '2rem' }}>Gestión de Juegos</h1>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={async () => {
+              if (window.confirm('⚠️ ¿ESTÁS SEGURO? Esto eliminará TODOS los cartones de la base de datos. Esta acción no se puede deshacer. Úsalo solo para limpiar pruebas.')) {
+                if (window.confirm('Última confirmación: ¿Realmente deseas borrar TODOS los cartones?')) {
+                  try {
+                    await cardRepository.deleteAllCards();
+                    alert('✅ Base de datos de cartones limpiada exitosamente. El error de falsos ganadores debería desaparecer.');
+                  } catch (err) {
+                    alert('Error al limpiar: ' + err);
+                  }
+                }
+              }
+            }}
+            style={{ 
+              marginBottom: '2rem', 
+              color: 'var(--color-error)', 
+              border: '1px solid var(--color-error)',
+              width: '100%',
+              maxWidth: '400px',
+              fontWeight: 700
+            }}
+          >
+            🗑️ Limpiar TODOS los Cartones (Solo para pruebas)
+          </Button>
           
           {loading ? (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>Cargando juegos...</div>

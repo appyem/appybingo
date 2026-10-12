@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, writeBatch, query, where, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, writeBatch, query, where, updateDoc, deleteDoc, arrayUnion, limit, startAfter, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { Card, CardId, GameId, RequestId, CardMatrix, CardCell } from '@bingo-types/index';
 import type { CardRepository } from './CardRepository';
@@ -145,6 +145,53 @@ export class FirebaseCardRepository implements CardRepository {
     
     return { success: true };
   }
+
+  async deleteCardsByGameId(gameId: string): Promise<void> {
+    const { collection, query, where, getDocs, writeBatch } = await import('firebase/firestore');
+    // Asumimos que 'db' está importado en este archivo. Si no, ajustaremos.
+    // Buscamos la importación de db para estar seguros, o usamos la global si existe.
+    const q = query(collection(db, 'cards'), where('gameId', '==', gameId));
+    const snapshot = await getDocs(q);
+    
+    if (snapshot.empty) return;
+    
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((docSnapshot) => {
+      batch.delete(docSnapshot.ref);
+    });
+    
+    await batch.commit();
+    console.log(`✅ ${snapshot.size} cartones eliminados del juego ${gameId}`);
+  }
+
+      async deleteAllCards(): Promise<void> {
+    let lastDoc: QueryDocumentSnapshot | null = null;
+    let totalDeleted = 0;
+
+    while (true) {
+      let q = query(this.col, limit(500));
+      if (lastDoc) {
+        q = query(this.col, startAfter(lastDoc), limit(500));
+      }
+      
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) break;
+      
+      const batch = writeBatch(db);
+      snapshot.docs.forEach((docSnapshot) => {
+        batch.delete(docSnapshot.ref);
+      });
+      
+      await batch.commit();
+      totalDeleted += snapshot.size;
+      
+      if (snapshot.size < 500) break;
+      lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    }
+    
+    console.log(`✅ ${totalDeleted} cartones eliminados en total de la base de datos.`);
+  }
+
 }
 
 export const cardRepository = new FirebaseCardRepository();
