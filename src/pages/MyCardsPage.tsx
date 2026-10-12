@@ -446,7 +446,48 @@ export function MyCardsPage() {
               {!gameHasWinner && (() => {
     const hasBingo = checkHasBingo(card, currentMarks);
     if (hasBingo) {
-      console.log('⚠️ [DEBUG] Bingo detectado en cartón:', card.id, 'Marcas actuales:', Array.from(currentMarks));
+      console.group('⚠️ [DEBUG FORENSE] Bingo detectado en cartón: ' + card.id);
+      console.log('1. Marcas actuales en el Set:', Array.from(currentMarks));
+      console.log('2. Matriz completa del cartón:', card.matrix);
+      
+      // Verificar filas
+      for (let r = 0; r < 5; r++) {
+        let full = true;
+        for (let c = 0; c < 5; c++) {
+          const val = card.matrix[r][c];
+          const isM = val === 'FREE' || (typeof val === 'number' && currentMarks.has(val));
+          if (!isM) { full = false; break; }
+        }
+        if (full) console.log('🏆 FILA GANADORA ENCONTRADA: Fila', r, card.matrix[r]);
+      }
+      
+      // Verificar columnas
+      for (let c = 0; c < 5; c++) {
+        let full = true;
+        for (let r = 0; r < 5; r++) {
+          const val = card.matrix[r][c];
+          const isM = val === 'FREE' || (typeof val === 'number' && currentMarks.has(val));
+          if (!isM) { full = false; break; }
+        }
+        if (full) console.log('🏆 COLUMNA GANADORA ENCONTRADA: Columna', c);
+      }
+      
+      // Verificar diagonales
+      let d1 = true, d2 = true;
+      const diag1 = [], diag2 = [];
+      for (let i = 0; i < 5; i++) {
+        const v1 = card.matrix[i][i];
+        diag1.push(v1);
+        if (!(v1 === 'FREE' || (typeof v1 === 'number' && currentMarks.has(v1)))) d1 = false;
+        
+        const v2 = card.matrix[i][4 - i];
+        diag2.push(v2);
+        if (!(v2 === 'FREE' || (typeof v2 === 'number' && currentMarks.has(v2)))) d2 = false;
+      }
+      if (d1) console.log('🏆 DIAGONAL 1 GANADORA:', diag1);
+      if (d2) console.log('🏆 DIAGONAL 2 GANADORA:', diag2);
+      
+      console.groupEnd();
     }
     return hasBingo;
   })() && (
