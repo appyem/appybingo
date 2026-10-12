@@ -73,30 +73,42 @@ export function MyCardsPage() {
 
   // 1. Helper para verificar Bingo localmente (Sin dependencias, seguro al inicio)
   const checkHasBingo = useCallback((card: Card, currentMarks: Set<number>) => {
+    if (!card || !card.matrix || !(currentMarks instanceof Set)) return false;
+    
     const matrix = card.matrix;
+    
+    // Función estricta: solo devuelve true si es 'FREE' o si es un número que está en el Set de marcados
+    const isMarked = (val: unknown) => {
+      if (val === 'FREE') return true;
+      if (typeof val === 'number' && currentMarks.has(val)) return true;
+      return false; // null, undefined, string, etc., NUNCA cuentan como marcados
+    };
+
+    // Verificar filas
     for (let r = 0; r < 5; r++) {
       let full = true;
       for (let c = 0; c < 5; c++) {
-        const val = matrix[r][c];
-        if (val !== 'FREE' && val !== null && !currentMarks.has(val)) { full = false; break; }
+        if (!isMarked(matrix[r][c])) { full = false; break; }
       }
       if (full) return true;
     }
+    
+    // Verificar columnas
     for (let c = 0; c < 5; c++) {
       let full = true;
       for (let r = 0; r < 5; r++) {
-        const val = matrix[r][c];
-        if (val !== 'FREE' && val !== null && !currentMarks.has(val)) { full = false; break; }
+        if (!isMarked(matrix[r][c])) { full = false; break; }
       }
       if (full) return true;
     }
+    
+    // Verificar diagonales
     let d1 = true, d2 = true;
     for (let i = 0; i < 5; i++) {
-      const v1 = matrix[i][i];
-      if (v1 !== 'FREE' && v1 !== null && !currentMarks.has(v1)) d1 = false;
-      const v2 = matrix[i][4 - i];
-      if (v2 !== 'FREE' && v2 !== null && !currentMarks.has(v2)) d2 = false;
+      if (!isMarked(matrix[i][i])) d1 = false;
+      if (!isMarked(matrix[i][4 - i])) d2 = false;
     }
+    
     return d1 || d2;
   }, []);
 
@@ -234,7 +246,7 @@ export function MyCardsPage() {
 
       const cardsNeedingMark = cards.filter(card => {
         const isInMatrix = card.matrix.some(row => row.includes(ball));
-        const currentMarks = markedStates[card.id] || new Set<number>();
+        const currentMarks = (markedStates[card.id] instanceof Set) ? markedStates[card.id] : new Set<number>();
         return isInMatrix && !currentMarks.has(ball);
       });
 
@@ -431,7 +443,13 @@ export function MyCardsPage() {
                 )}
               </div>
 
-              {!gameHasWinner && checkHasBingo(card, currentMarks) && (
+              {!gameHasWinner && (() => {
+    const hasBingo = checkHasBingo(card, currentMarks);
+    if (hasBingo) {
+      console.log('⚠️ [DEBUG] Bingo detectado en cartón:', card.id, 'Marcas actuales:', Array.from(currentMarks));
+    }
+    return hasBingo;
+  })() && (
                 <button
                   onClick={() => handleClaimBingo(card.id)}
                   style={{
