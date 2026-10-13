@@ -170,10 +170,43 @@ export function HomePage() {
   });
 
   useEffect(() => {
-    gameRepository.getGames().then(data => {
-      setGames(data);
-      setLoading(false);
-    });
+    let isMounted = true;
+    let initialLoadDone = false;
+
+    const fetchGames = async () => {
+      try {
+        // Solo mostrar pantalla de carga la PRIMERA vez
+        if (!initialLoadDone && isMounted) {
+          setLoading(true);
+        }
+        
+        const data = await gameRepository.getGames();
+        
+        if (isMounted) {
+          setGames(data);
+          initialLoadDone = true;
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Error cargando juegos en segundo plano:', err);
+        if (isMounted) {
+          initialLoadDone = true;
+          setLoading(false);
+        }
+      }
+    };
+
+    // 1. Carga inicial inmediata
+    fetchGames();
+
+    // 2. Polling silencioso: Actualizar cada 15 segundos SIN mostrar pantalla de carga
+    const intervalId = setInterval(fetchGames, 15000);
+
+    // 3. Limpieza segura al desmontar el componente (evita memory leaks)
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, []);
 
   const activeGames = games.filter(g => g.state === 'RUNNING' || g.state === 'PAUSED');
