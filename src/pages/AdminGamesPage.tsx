@@ -363,7 +363,7 @@ export function AdminGamesPage() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Valor por cartón ($)</label>
-                  <input type="number" placeholder="5000" value={pricePerCard} onChange={(e) => setPricePerCard(e.target.value)} required min="1" style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }} />
+                  <input type="number" placeholder="5000 (0 para juego gratuito)" value={pricePerCard} onChange={(e) => setPricePerCard(e.target.value)} required min="0" step="100" style={{ width: '100%', padding: '0.75rem 1rem', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', color: 'white', fontSize: '0.875rem' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-secondary)', marginBottom: '0.5rem' }}>Tipo de Premio</label>

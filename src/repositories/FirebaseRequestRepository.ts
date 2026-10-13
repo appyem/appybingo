@@ -19,27 +19,29 @@ export class FirebaseRequestRepository implements RequestRepository {
   }
 
     async createRequest(data: Omit<CardRequest, 'id' | 'createdAt'>): Promise<CardRequest> {
-    // Verificar duplicados solo si gameId y whatsapp están definidos
+    // Verificar duplicados: si ya existe una solicitud activa para este whatsapp y gameId
     if (data.whatsapp && data.gameId) {
       try {
-        const q = query(
-          this.col, 
-          where('whatsapp', '==', data.whatsapp), 
-          where('gameId', '==', data.gameId),
-          where('status', '==', 'PENDIENTE')
-        );
+        // Consulta de un solo campo para evitar errores de índices compuestos en Firestore
+        const q = query(this.col, where('whatsapp', '==', data.whatsapp));
         const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          throw new Error('Ya tienes una solicitud pendiente para este juego.');
+        
+        const isDuplicate = snapshot.docs.some(d => {
+          const reqData = d.data() as Record<string, unknown>;
+          return reqData.gameId === data.gameId && 
+                 (reqData.status === 'PENDIENTE' || reqData.status === 'EN_REVISION' || reqData.status === 'APROBADA');
+        });
+        
+        if (isDuplicate) {
+          throw new Error('DUPLICATE_WHATSAPP');
         }
       } catch (err: unknown) {
-        const error = err as { code?: string; message?: string };
-        // Si Firestore pide crear un índice compuesto, NO bloqueamos la solicitud para no detener el juego
-        if (error.code === 'failed-precondition' || (error.message && error.message.toLowerCase().includes('index'))) {
-          console.warn('⚠️ Índice de Firestore faltante, permitiendo solicitud para no bloquear el juego.');
-        } else {
-          throw err;
+        const error = err as { message?: string };
+        if (error.message === 'DUPLICATE_WHATSAPP') {
+          throw err; // Relanzamos el error específico para que la UI lo maneje
         }
+        // Si es otro error de Firestore, lo logueamos pero no bloqueamos para no detener el flujo
+        console.warn('⚠️ Error verificando duplicados en Firestore:', err);
       }
     }
 

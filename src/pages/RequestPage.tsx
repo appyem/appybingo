@@ -95,6 +95,7 @@ export function RequestPage() {
   const [whatsappError, setWhatsappError] = useState('');
   const [requestId, setRequestId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isFreeGame = game?.pricePerCard === 0;
 
   useEffect(() => {
     if (initialGameId) {
@@ -126,12 +127,14 @@ export function RequestPage() {
       try {
         const newRequestId = 'APPY-' + Math.random().toString(36).substring(2, 8).toUpperCase();
         const playerId = createUUID();
+        // Si es juego gratuito, forzar cantidad a 1
+        const finalQuantity = isFreeGame ? 1 : quantity;
         
         await requestRepository.createRequest({
           playerId,
           playerName: name.trim(),
           whatsapp: normalizeWhatsApp(whatsapp),
-          requestedCards: quantity,
+          requestedCards: finalQuantity,
           status: 'PENDIENTE',
           gameId: initialGameId || undefined
         });
@@ -139,9 +142,14 @@ export function RequestPage() {
         sessionStorage.setItem('currentDemoPlayerId', playerId);
         setRequestId(newRequestId);
         setStep('SUMMARY');
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error al crear solicitud:', error);
-        alert('Ocurrió un error al procesar tu solicitud. Por favor intenta de nuevo.');
+        const err = error as { message?: string };
+        if (err.message === 'DUPLICATE_WHATSAPP') {
+          setWhatsappError('Este número de WhatsApp ya tiene una solicitud activa para esta partida.');
+        } else {
+          alert('Ocurrió un error al procesar tu solicitud. Por favor intenta de nuevo.');
+        }
       } finally {
         setIsSubmitting(false);
       }
@@ -282,12 +290,20 @@ export function RequestPage() {
                 error={whatsappError}
                 maxLength={12}
               />
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#d4d4e8', marginBottom: '0.5rem' }}>
-                  Cantidad de cartones
-                </label>
-                <QuantitySelector value={quantity} onChange={setQuantity} min={1} max={99} />
-              </div>
+              {isFreeGame ? (
+                <div style={{ marginBottom: '1rem', padding: '1rem', background: 'rgba(42, 157, 143, 0.1)', border: '1px solid rgba(42, 157, 143, 0.3)', borderRadius: 'var(--radius-lg)' }}>
+                  <p style={{ fontSize: '0.875rem', color: '#2A9D8F', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    🎁 Evento Gratuito: Se asignará exactamente 1 cartón por persona.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#d4d4e8', marginBottom: '0.5rem' }}>
+                    Cantidad de cartones
+                  </label>
+                  <QuantitySelector value={quantity} onChange={setQuantity} min={1} max={99} />
+                </div>
+              )}
               <button
                 type="button"
                 className="request-cta"
@@ -325,7 +341,7 @@ export function RequestPage() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--color-border)' }}>
                   <span style={{ color: '#d4d4e8', fontSize: '0.875rem' }}>Cantidad</span>
-                  <span style={{ color: 'white', fontWeight: 600, fontSize: '0.875rem' }}>{quantity} carton(es)</span>
+                  <span style={{ color: 'white', fontWeight: 600, fontSize: '0.875rem' }}>{isFreeGame ? 1 : quantity} carton(es)</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
                   <span style={{ color: '#d4d4e8', fontSize: '0.875rem' }}>ID de Solicitud</span>

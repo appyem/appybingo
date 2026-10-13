@@ -157,6 +157,7 @@ export function HomePage() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [showOrganizeModal, setShowOrganizeModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [orgForm, setOrgForm] = useState({
     eventName: '',
     pricePerCard: '',
@@ -165,6 +166,7 @@ export function HomePage() {
     prizeName: '',
     prizeDescription: '',
     sponsorName: '',
+    scheduledDate: '',
     requesterName: '',
     requesterWhatsApp: ''
   });
@@ -216,29 +218,53 @@ export function HomePage() {
     return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value);
   };
 
-  const handleOrganizeSubmit = (e: React.FormEvent) => {
+    const handleOrganizeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
-    // ⚠️ IMPORTANTE: Reemplaza este número con tu número de WhatsApp real 
-    // (código de país + número, sin espacios ni signos +). Ejemplo Colombia: 573001234567
-    const adminWhatsApp = "573000000000"; 
-    
-    const prizeDetails = orgForm.prizeType === 'CASH' 
-      ? `Efectivo: ${formatCurrency(Number(orgForm.prizeValue))}`
-      : `Producto: ${orgForm.prizeName}${orgForm.prizeDescription ? ' (' + orgForm.prizeDescription + ')' : ''}`;
+    try {
+      // Construir los datos del juego exactamente como lo hace el Admin
+      const gameData: Omit<Game, 'id' | 'createdAt' | 'updatedAt'> = {
+        name: orgForm.eventName.trim(),
+        variant: 'BINGO_75',
+        state: 'DRAFT', // Se crea en borrador para que el admin lo revise y lo abra
+        createdBy: orgForm.requesterName.trim() || 'Solicitante',
+        pricePerCard: Number(orgForm.pricePerCard) || 0,
+        prizeType: orgForm.prizeType,
+        ...(orgForm.prizeType === 'CASH' ? { prizeValue: Number(orgForm.prizeValue) || 0 } : {}),
+        ...(orgForm.prizeType === 'PRODUCT' ? { 
+          prizeName: orgForm.prizeName.trim(),
+          ...(orgForm.prizeDescription.trim() ? { prizeDescription: orgForm.prizeDescription.trim() } : {})
+        } : {}),
+        sponsorName: orgForm.sponsorName.trim() || 'AppyBingo'
+      };
 
-    const message = `¡Hola! Quiero organizar mi propio Bingo en AppyBingo. Aquí están los detalles:\n\n` +
-      `📌 *Nombre del Evento:* ${orgForm.eventName}\n` +
-      `💰 *Valor por cartón:* ${formatCurrency(Number(orgForm.pricePerCard))}\n` +
-      `🎁 *Premio:* ${prizeDetails}\n` +
-      `🤝 *Patrocinador:* ${orgForm.sponsorName || 'Ninguno'}\n\n` +
-      `👤 *Datos del Solicitante:*\n` +
-      `Nombre: ${orgForm.requesterName}\n` +
-      `WhatsApp: ${orgForm.requesterWhatsApp}\n\n` +
-      `¡Quedo atento a su respuesta para coordinar!`;
-
-    const encodedMessage = encodeURIComponent(message);
-    window.location.href = `https://api.whatsapp.com/send?phone=${adminWhatsApp}&text=${encodedMessage}`;
+      // Crear el juego automáticamente en la base de datos
+      await gameRepository.createGame(gameData);
+      
+      // Notificación opcional a tu WhatsApp para que sepas que hay uno nuevo para activar
+      const adminWhatsApp = "573215177902"; // ⚠️ Reemplaza con tu número real
+      const message = `¡Nueva solicitud de Bingo creada automáticamente!\n\n📌 *Evento:* ${orgForm.eventName}\n💰 *Valor cartón:* ${formatCurrency(Number(orgForm.pricePerCard))}\n🕒 *Fecha/Hora:* ${orgForm.scheduledDate ? new Date(orgForm.scheduledDate).toLocaleString('es-CO') : 'Sin programar'}\n👤 *Solicitante:* ${orgForm.requesterName}\n📱 *WhatsApp:* ${orgForm.requesterWhatsApp}\n\nEl juego ya está en estado DRAFT en tu panel.`;
+      
+      // Limpiar formulario y cerrar modal
+      setOrgForm({
+        eventName: '', pricePerCard: '', prizeType: 'CASH',
+        prizeValue: '', prizeName: '', prizeDescription: '',
+        sponsorName: '', scheduledDate: '', requesterName: '', requesterWhatsApp: ''
+      });
+      setShowOrganizeModal(false);
+      
+      // Abrir WhatsApp en nueva pestaña para notificarte
+      window.open(`https://api.whatsapp.com/send?phone=${adminWhatsApp}&text=${encodeURIComponent(message)}`, '_blank');
+      
+      alert('¡Juego creado exitosamente! Un administrador lo revisará y activará pronto.');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      console.error('Error al crear el juego:', err);
+      alert('Ocurrió un error al crear el juego. Detalle: ' + (err.message || 'Desconocido'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -479,11 +505,11 @@ export function HomePage() {
               <div>
                 <label className="form-label">Valor por Cartón ($) *</label>
                 <input 
-                  type="number" required min="1000"
+                  type="number" required min="0" step="100"
                   className="glass-input"
                   value={orgForm.pricePerCard}
                   onChange={(e) => setOrgForm({...orgForm, pricePerCard: e.target.value})}
-                  placeholder="Ej: 5000"
+                  placeholder="Ej: 5000 (0 para juego gratuito)"
                 />
               </div>
 
@@ -546,6 +572,16 @@ export function HomePage() {
                 />
               </div>
 
+              <div>
+                <label className="form-label">Fecha y Hora del Evento (Opcional)</label>
+                <input 
+                  type="datetime-local"
+                  className="glass-input"
+                  value={orgForm.scheduledDate}
+                  onChange={(e) => setOrgForm({...orgForm, scheduledDate: e.target.value})}
+                />
+              </div>
+
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
                 <label className="form-label" style={{ color: '#FCBF49', fontWeight: 700 }}>Tus Datos de Contacto *</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.75rem' }}>
@@ -569,8 +605,10 @@ export function HomePage() {
               <button
                 type="submit"
                 className="whatsapp-submit-btn"
+                disabled={isSubmitting}
+                style={{ opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
               >
-                📱 Enviar Solicitud por WhatsApp
+                {isSubmitting ? '⏳ Creando juego...' : '🚀 Crear Solicitud de Bingo'}
               </button>
             </form>
           </div>
