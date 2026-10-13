@@ -17,28 +17,45 @@ export function AdminDashboard() {
   const [games, setGames] = useState<Game[]>([]);
   const [viewMode, setViewMode] = useState<'ACTIVE' | 'HISTORY'>('ACTIVE');
 
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const [reqData, gamesData] = await Promise.all([
-        requestRepository.getRequests(),
-        gameRepository.getGames()
-      ]);
-      setRequests(reqData);
-      setGames(gamesData);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Desconocido';
-      console.error('Error cargando datos:', err);
-      setError('No se pudieron cargar los datos. Detalle: ' + message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadData();
+    let isMounted = true;
+
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const [reqData, gamesData] = await Promise.all([
+          requestRepository.getRequests(),
+          gameRepository.getGames()
+        ]);
+        if (isMounted) {
+          setRequests(reqData);
+          setGames(gamesData);
+        }
+      } catch (err: unknown) {
+        if (isMounted) {
+          const message = err instanceof Error ? err.message : 'Desconocido';
+          console.error('Error cargando datos:', err);
+          setError('No se pudieron cargar los datos. Detalle: ' + message);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    // 1. Carga inicial inmediata
+    fetchData();
+
+    // 2. Polling: Actualizar automáticamente cada 10 segundos para ver nuevas solicitudes en tiempo real
+    const intervalId = setInterval(fetchData, 10000);
+
+    // 3. Limpieza segura al desmontar el componente (evita memory leaks y warnings)
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, []);
 
   
