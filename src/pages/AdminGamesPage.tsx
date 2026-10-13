@@ -25,9 +25,11 @@ export function AdminGamesPage() {
   const autoDrawIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isDrawingRef = useRef(false);
 
-  const loadGames = useCallback(async () => {
+  const loadGames = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
       const data = await gameRepository.getGames();
       setGames(data);
@@ -36,13 +38,31 @@ export function AdminGamesPage() {
       console.error('Error cargando juegos:', err);
       setError('No se pudieron cargar los juegos. Detalle: ' + message);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+    
+    // 1. Carga inicial con indicador de carga
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadGames();
+    loadGames(false);
+
+    // 2. Polling silencioso: Actualiza la lista cada 15 segundos SIN pantalla de carga
+    const intervalId = setInterval(() => {
+      if (isMounted) {
+        loadGames(true);
+      }
+    }, 15000);
+
+    // 3. Limpieza segura al desmontar el componente
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, [loadGames]);
   // Efecto para el sorteo automático cada 12 segundos
   useEffect(() => {
