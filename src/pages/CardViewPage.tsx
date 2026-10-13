@@ -491,7 +491,10 @@ export function CardViewPage() {
                     transition: 'all 0.2s',
                     userSelect: 'none',
                     animation: isPendingAuto ? 'pulse-border 1s infinite' : (isInvalid ? 'shake 0.5s' : 'none'),
-                    position: 'relative'
+                    position: 'relative',
+                    minWidth: '0',
+                    overflow: 'hidden',
+                    boxSizing: 'border-box'
                   }}
                 >
                   {isFree ? 'FREE' : cell}

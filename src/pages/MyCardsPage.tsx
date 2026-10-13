@@ -432,7 +432,10 @@ export function MyCardsPage() {
               border: '2px solid var(--color-border)', 
               borderRadius: 'var(--radius-xl)', 
               padding: '1rem',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
+              boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+              width: '100%',
+              boxSizing: 'border-box',
+              overflow: 'hidden'
             }}>
               <div style={{ 
                 fontSize: '1.125rem', fontWeight: 800, color: 'var(--color-primary)', 
@@ -474,11 +477,14 @@ export function MyCardsPage() {
                           color: isMarked ? 'white' : (isFree ? '#0A1628' : 'white'),
                           borderRadius: '8px',
                           fontWeight: 800,
-                          fontSize: isCenter ? '0.65rem' : (isFree ? '0.7rem' : '1.1rem'), // Letra más pequeña para el patrocinador
+                          fontSize: isCenter ? '0.65rem' : (isFree ? '0.7rem' : '1.1rem'),
                           lineHeight: 1.1,
                           textAlign: 'center',
                           padding: isCenter ? '0.25rem' : '0',
                           wordWrap: 'break-word',
+                          minWidth: '0',
+                          overflow: 'hidden',
+                          boxSizing: 'border-box',
                           border: isInvalid ? '2px solid var(--color-error)' : (isPendingAuto ? '2px solid var(--color-warning)' : (isFree ? 'none' : '1px solid var(--color-border)')),
                           cursor: isFree || isMarked ? 'default' : 'pointer',
                           transition: 'all 0.2s',
