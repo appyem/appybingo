@@ -41,6 +41,10 @@ export function RequestDetail() {
       }
 
       setRequest(reqData);
+      // Pre-seleccionar automáticamente el juego si la solicitud ya tiene uno asociado
+      if (reqData.gameId) {
+        setSelectedGameId(reqData.gameId);
+      }
       const cardsData = await cardRepository.getCardsByRequestId(reqData.id);
       setCards(cardsData);
     } catch (err: unknown) {
@@ -61,13 +65,17 @@ export function RequestDetail() {
     const loadOpenGames = async () => {
       try {
         const games = await gameRepository.getGames();
-        setAvailableGames(games.filter(g => g.state === 'OPEN'));
+        // Incluir juegos OPEN o el juego específico de la solicitud (para garantizar que aparezca seleccionado)
+        const filteredGames = games.filter(g => 
+          g.state === 'OPEN' || (request && g.id === request.gameId)
+        );
+        setAvailableGames(filteredGames);
       } catch (err) {
         console.error('Error cargando juegos:', err);
       }
     };
     loadOpenGames();
-  }, []);
+  }, [request]);
 
   const handleApprove = async () => {
     if (!request) return;
