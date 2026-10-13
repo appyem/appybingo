@@ -17,29 +17,35 @@ export function AdminDashboard() {
   const [games, setGames] = useState<Game[]>([]);
   const [viewMode, setViewMode] = useState<'ACTIVE' | 'HISTORY'>('ACTIVE');
 
-  useEffect(() => {
+    useEffect(() => {
     let isMounted = true;
+    let initialLoadDone = false;
 
     const fetchData = async () => {
-      try {
+      // Solo mostrar pantalla de carga la PRIMERA vez
+      if (!initialLoadDone && isMounted) {
         setIsLoading(true);
-        setError(null);
+      }
+      
+      try {
+        setError(null); // Limpiar errores previos silenciosamente
         const [reqData, gamesData] = await Promise.all([
           requestRepository.getRequests(),
           gameRepository.getGames()
         ]);
+        
         if (isMounted) {
           setRequests(reqData);
           setGames(gamesData);
+          initialLoadDone = true;
+          setIsLoading(false); // Desactivar carga solo después del primer éxito
         }
       } catch (err: unknown) {
         if (isMounted) {
           const message = err instanceof Error ? err.message : 'Desconocido';
-          console.error('Error cargando datos:', err);
+          console.error('Error cargando datos en segundo plano:', err);
           setError('No se pudieron cargar los datos. Detalle: ' + message);
-        }
-      } finally {
-        if (isMounted) {
+          initialLoadDone = true;
           setIsLoading(false);
         }
       }
@@ -48,10 +54,10 @@ export function AdminDashboard() {
     // 1. Carga inicial inmediata
     fetchData();
 
-    // 2. Polling: Actualizar automáticamente cada 10 segundos para ver nuevas solicitudes en tiempo real
+    // 2. Polling silencioso: Actualizar cada 10 segundos SIN mostrar pantalla de carga
     const intervalId = setInterval(fetchData, 10000);
 
-    // 3. Limpieza segura al desmontar el componente (evita memory leaks y warnings)
+    // 3. Limpieza segura al desmontar
     return () => {
       isMounted = false;
       clearInterval(intervalId);
