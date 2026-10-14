@@ -3,6 +3,33 @@ import { cardRepository, gameRepository, requestRepository } from '../repositori
 import { speakBingoNumber } from '../utils/bingo';
 import type { Card, Game } from '@bingo-types/index';
 
+// Hook personalizado para el contador regresivo
+const useCountdown = (targetDate: number | undefined) => {
+  const [timeLeft, setTimeLeft] = useState<string>('');
+  
+  useEffect(() => {
+    if (!targetDate) return;
+    
+    const updateCountdown = () => {
+      const diff = targetDate - Date.now();
+      if (diff <= 0) {
+        setTimeLeft('¡En Vivo!');
+      } else {
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+      }
+    };
+
+    updateCountdown();
+    const intervalId = setInterval(updateCountdown, 1000);
+    return () => clearInterval(intervalId);
+  }, [targetDate]);
+
+  return timeLeft;
+};
+
 // Componente de Bola 3D Realista
 const BingoBall3D = ({ number, size = 80 }: { number: number; size?: number }) => {
   const getBallColor = (letter: string) => {
@@ -52,6 +79,7 @@ export function MyCardsPage() {
   
   const [cards, setCards] = useState<Card[]>([]);
   const [game, setGame] = useState<Game | null>(null);
+  const countdown = useCountdown(game?.scheduledAt);
   const [loading, setLoading] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(false);
   
@@ -410,12 +438,28 @@ export function MyCardsPage() {
             ) : (
               <div style={{ width: '90px', height: '90px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '2px dashed rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', color: 'rgba(255,255,255,0.3)' }}>?</div>
             )}
-            <div>
+            <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '1rem', fontWeight: 800, color: 'white', textTransform: 'uppercase' }}>
-                {game.currentBall ? '¡Bola Actual!' : 'Esperando primera bola'}
+                {game.currentBall ? '¡Bola Actual!' : (countdown === '¡En Vivo!' ? '¡El juego ha comenzado!' : 'Esperando inicio')}
               </div>
-              <div style={{ fontSize: '0.875rem', color: '#FCBF49', fontWeight: 600 }}>
-                Sorteados: {game.drawnNumbers?.length || 0} / 75
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
+                <div style={{ fontSize: '0.875rem', color: '#FCBF49', fontWeight: 600 }}>
+                  Sorteados: {game.drawnNumbers?.length || 0} / 75
+                </div>
+                {game.scheduledAt && game.state !== 'RUNNING' && (
+                  <div style={{ 
+                    fontSize: '1.25rem', 
+                    fontWeight: 900, 
+                    color: 'white', 
+                    fontFamily: 'monospace',
+                    background: 'rgba(252, 191, 73, 0.2)',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(252, 191, 73, 0.4)'
+                  }}>
+                    Faltan: {countdown || 'Calculando...'}
+                  </div>
+                )}
               </div>
             </div>
           </div>
