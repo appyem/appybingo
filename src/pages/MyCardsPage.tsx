@@ -418,7 +418,7 @@ export function MyCardsPage() {
 
       `}</style>
 
-      {game && (game.state === 'RUNNING' || game.state === 'PAUSED') && (
+      {game && (game.state === 'RUNNING' || game.state === 'PAUSED' || game.state === 'OPEN' || game.state === 'READY') && (
         <div style={{ 
           position: 'sticky', top: 0, zIndex: 50, 
           background: 'linear-gradient(135deg, rgba(26, 26, 36, 0.95) 0%, rgba(48, 43, 99, 0.95) 100%)',
