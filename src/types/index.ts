@@ -34,6 +34,7 @@ export interface Game {
   currentBall?: number | null;
   drawnNumbers?: number[];
   sponsorName?: string; // Nombre del patrocinador de la partida
+  organizerWhatsApp?: string; // Número de WhatsApp del organizador del juego (si aplica)
 }
 
 export interface Player {

@@ -6,8 +6,7 @@ import {
   normalizeWhatsApp, 
   isValidWhatsApp, 
   formatWhatsAppDisplay,
-  buildWhatsAppRequestMessage,
-  buildWhatsAppDeepLink
+  buildWhatsAppRequestMessage
 } from '../utils/requests';
 import { requestRepository, gameRepository } from '../repositories';
 import { createUUID } from '@utils/ids';
@@ -159,8 +158,13 @@ export function RequestPage() {
   const handleOpenWhatsApp = () => {
     const normalizedPhone = normalizeWhatsApp(whatsapp);
     const displayPhone = formatWhatsAppDisplay(normalizedPhone);
-    const message = buildWhatsAppRequestMessage(name.trim(), displayPhone, quantity, requestId);
-    const deepLink = buildWhatsAppDeepLink(message);
+    const finalQuantity = isFreeGame ? 1 : quantity;
+    const message = buildWhatsAppRequestMessage(name.trim(), displayPhone, finalQuantity, requestId);
+    
+    // Determinar el número de destino: organizador si existe, si no, el admin por defecto
+    const targetWhatsApp = game?.organizerWhatsApp || "573215177902";
+    
+    const deepLink = `https://api.whatsapp.com/send?phone=${targetWhatsApp}&text=${encodeURIComponent(message)}`;
     window.location.href = deepLink;
     setStep('SUCCESS');
   };

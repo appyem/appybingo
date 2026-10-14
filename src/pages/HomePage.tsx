@@ -237,7 +237,8 @@ export function HomePage() {
           ...(orgForm.prizeDescription.trim() ? { prizeDescription: orgForm.prizeDescription.trim() } : {})
         } : {}),
         ...(orgForm.scheduledDate ? { scheduledAt: new Date(orgForm.scheduledDate).getTime() } : {}),
-        sponsorName: orgForm.sponsorName.trim() || 'AppyBingo'
+        sponsorName: orgForm.sponsorName.trim() || 'AppyBingo',
+        ...(orgForm.requesterWhatsApp.trim() ? { organizerWhatsApp: orgForm.requesterWhatsApp.trim() } : {})
       };
 
       // Crear el juego automáticamente en la base de datos
