@@ -15,16 +15,18 @@ export function OrganizerRequestsPage() {
   const [loading, setLoading] = useState(true);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (silent = false) => {
     if (!gameId) {
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       const gameData = await gameRepository.getGameById(gameId);
       if (!gameData) {
-        setLoading(false);
+        if (!silent) setLoading(false);
         return;
       }
       setGame(gameData);
@@ -36,13 +38,31 @@ export function OrganizerRequestsPage() {
     } catch (err: unknown) {
       console.error('Error cargando datos del organizador:', err);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [gameId]);
 
   useEffect(() => {
+    let isMounted = true;
+    
+    // 1. Carga inicial con indicador de carga
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadData();
+    loadData(false);
+
+    // 2. Polling silencioso: Actualiza la lista cada 10 segundos SIN pantalla de carga
+    const intervalId = setInterval(() => {
+      if (isMounted) {
+        loadData(true);
+      }
+    }, 10000);
+
+    // 3. Limpieza segura al desmontar el componente
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, [loadData]);
 
   const handleApproveAndGenerate = async (requestId: RequestId, requestedCards: number) => {

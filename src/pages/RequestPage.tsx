@@ -162,7 +162,9 @@ export function RequestPage() {
     const message = buildWhatsAppRequestMessage(name.trim(), displayPhone, finalQuantity, requestId);
     
     // Determinar el número de destino: organizador si existe, si no, el admin por defecto
-    const targetWhatsApp = game?.organizerWhatsApp || "573215177902";
+    const rawTarget = game?.organizerWhatsApp || "573215177902";
+    const cleanTarget = rawTarget.replace(/\D/g, '');
+    const targetWhatsApp = cleanTarget.startsWith('57') ? cleanTarget : '57' + cleanTarget;
     
     const deepLink = `https://api.whatsapp.com/send?phone=${targetWhatsApp}&text=${encodeURIComponent(message)}`;
     window.location.href = deepLink;

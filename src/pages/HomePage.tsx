@@ -238,7 +238,12 @@ export function HomePage() {
         } : {}),
         ...(orgForm.scheduledDate ? { scheduledAt: new Date(orgForm.scheduledDate).getTime() } : {}),
         sponsorName: orgForm.sponsorName.trim() || 'AppyBingo',
-        ...(orgForm.requesterWhatsApp.trim() ? { organizerWhatsApp: orgForm.requesterWhatsApp.trim() } : {})
+        ...(orgForm.requesterWhatsApp.trim() ? { 
+    organizerWhatsApp: (() => {
+      const cleanNumber = orgForm.requesterWhatsApp.replace(/\D/g, '');
+      return cleanNumber.startsWith('57') ? cleanNumber : '57' + cleanNumber;
+    })()
+  } : {})
       };
 
       // Crear el juego automáticamente en la base de datos
@@ -269,8 +274,70 @@ export function HomePage() {
     }
   };
 
+  // Configuración de elementos flotantes para llenar la pantalla en PC
+  const floatingBalls = [
+    { number: 7, color: '#E63946', size: 60, x: '8%', y: '15%', delay: 0 },
+    { number: 52, color: '#9B5DE5', size: 50, x: '85%', y: '10%', delay: 0.5 },
+    { number: 18, color: '#2A9D8F', size: 55, x: '12%', y: '65%', delay: 1 },
+    { number: 34, color: '#F77F00', size: 65, x: '80%', y: '60%', delay: 1.5 },
+    { number: 12, color: '#0077B6', size: 45, x: '45%', y: '80%', delay: 2 },
+    { number: 68, color: '#E63946', size: 40, x: '25%', y: '25%', delay: 2.5 },
+    { number: 71, color: '#9B5DE5', size: 35, x: '70%', y: '85%', delay: 3 },
+  ];
+
+  const floatingLogos = [
+    { x: '5%', y: '40%', size: 50, delay: 0 },
+    { x: '90%', y: '50%', size: 60, delay: 1 },
+    { x: '45%', y: '15%', size: 40, delay: 2 },
+    { x: '75%', y: '85%', size: 55, delay: 1.5 },
+    { x: '20%', y: '90%', size: 45, delay: 3 },
+    { x: '85%', y: '30%', size: 35, delay: 2.5 },
+  ];
+
   return (
-    <div style={{ padding: '2rem 1rem', maxWidth: '64rem', margin: '0 auto' }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      width: '100%', 
+      position: 'relative', 
+      overflow: 'hidden',
+      background: 'radial-gradient(ellipse at 50% 0%, #3b4d61 0%, #1e2a38 40%, #0f151c 100%)'
+    }}>
+      {/* Balotas 3D flotantes en el fondo */}
+      {floatingBalls.map((ball, idx) => (
+        <BingoBall3D 
+          key={`bg-ball-${idx}`}
+          number={ball.number} 
+          color={ball.color} 
+          size={ball.size} 
+          delay={ball.delay} 
+          x={ball.x} 
+          y={ball.y} 
+        />
+      ))}
+
+      {/* Logos pequeños flotantes en el fondo */}
+      {floatingLogos.map((logo, idx) => (
+        <img 
+          key={`bg-logo-${idx}`}
+          src="/logo.png" 
+          alt="AppyBingo" 
+          style={{
+            position: 'absolute',
+            left: logo.x,
+            top: logo.y,
+            width: `${logo.size}px`,
+            height: 'auto',
+            opacity: 0.25,
+            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5)) brightness(1.5)',
+            animation: `floatLogo 6s ease-in-out infinite`,
+            animationDelay: `${logo.delay}s`,
+            zIndex: 0,
+            pointerEvents: 'none',
+          }} 
+        />
+      ))}
+
+      <div style={{ padding: '2rem 1rem', maxWidth: '64rem', margin: '0 auto', position: 'relative', zIndex: 10 }}>
       
       {/* HERO SECTION - Diseño Casa de Apuestas */}
       <div style={{ 
@@ -402,7 +469,8 @@ export function HomePage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.5rem'
+                gap: '0.5rem',
+                margin: '0 auto'
               }}
             >
               🎲 Organiza tu propio Bingo
@@ -654,6 +722,14 @@ export function HomePage() {
             transform: translateY(-8px); 
           }
         }
+        @keyframes floatLogo {
+          0%, 100% { 
+            transform: translateY(0) rotate(0deg); 
+          }
+          50% { 
+            transform: translateY(-25px) rotate(5deg); 
+          }
+        }
         @keyframes pulse-glow {
           0%, 100% { opacity: 1; box-shadow: 0 0 12px #E63946; }
           50% { opacity: 0.6; box-shadow: 0 0 20px #E63946; }
@@ -747,6 +823,7 @@ export function HomePage() {
           transform: translateY(0);
         }
       `}</style>
+      </div>
     </div>
   );
 }
