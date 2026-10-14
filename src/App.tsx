@@ -14,6 +14,7 @@ import { AdminLoginPage } from './pages/AdminLoginPage';
 import { AdminWinnersPage } from './pages/AdminWinnersPage';
 import { GameRoomPage } from './pages/GameRoomPage';
 import { OrganizerRequestsPage } from './pages/OrganizerRequestsPage';
+import { OrganizerReportPage } from './pages/OrganizerReportPage';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -41,6 +42,7 @@ function AppContent() {
   if (hash === '#mis-cartones' || hash === '#/mis-cartones' || hash.startsWith('#/mis-cartones/')) return <Layout><MyCardsPage /></Layout>;
   if (hash.startsWith('#/carton/')) return <Layout><CardViewPage /></Layout>;
   if (hash.startsWith('#/game/')) return <Layout><GameRoomPage /></Layout>;
+  if (hash.startsWith('#/organizador/') && hash.endsWith('/reporte')) return <Layout><OrganizerReportPage /></Layout>;
   if (hash.startsWith('#/organizador/')) return <Layout><OrganizerRequestsPage /></Layout>;
   
   // Rutas administrativas

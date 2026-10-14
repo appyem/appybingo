@@ -112,6 +112,27 @@ export function OrganizerRequestsPage() {
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Panel del Organizador</h1>
         <p style={{ color: 'var(--color-text-secondary)' }}>Juego: <strong style={{ color: 'var(--color-primary)' }}>{game.name}</strong></p>
+        
+        {game.state === 'FINISHED' && (
+          <Button 
+            variant="primary" 
+            size="lg" 
+            onClick={() => { window.location.hash = `#/organizador/${gameId}/reporte`; }}
+            style={{ 
+              marginTop: '1.5rem',
+              width: '100%', 
+              maxWidth: '400px',
+              background: 'linear-gradient(135deg, #FCBF49 0%, #F77F00 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              margin: '1.5rem auto 0 auto'
+            }}
+          >
+            📊 Ver Resumen Final y Ganador del Juego
+          </Button>
+        )}
       </div>
 
       <div style={{ marginBottom: '2rem' }}>
