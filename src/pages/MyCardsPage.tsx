@@ -382,6 +382,16 @@ export function MyCardsPage() {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.2); }
         }
+        @keyframes sponsorGlow {
+          0%, 100% { 
+            text-shadow: 0 0 5px rgba(252, 191, 73, 0.5), 0 0 10px rgba(252, 191, 73, 0.3);
+            transform: scale(1);
+          }
+          50% { 
+            text-shadow: 0 0 15px rgba(252, 191, 73, 1), 0 0 25px rgba(252, 191, 73, 0.8);
+            transform: scale(1.05);
+          }
+        }
 
 
         .cards-page-wrapper {
@@ -518,9 +528,9 @@ export function MyCardsPage() {
                           aspectRatio: '1',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           background: isMarked ? 'var(--color-success)' : (isPendingAuto ? 'rgba(252, 191, 73, 0.2)' : 'var(--color-bg-elevated)'),
-                          color: isMarked ? 'white' : (isFree ? '#0A1628' : 'white'),
+                          color: isCenter ? '#FCBF49' : (isMarked ? 'white' : (isFree ? '#0A1628' : 'white')),
                           borderRadius: '8px',
-                          fontWeight: 800,
+                          fontWeight: isCenter ? 900 : 800,
                           fontSize: isCenter ? '0.65rem' : (isFree ? '0.7rem' : '1.1rem'),
                           lineHeight: 1.1,
                           textAlign: 'center',
@@ -533,7 +543,8 @@ export function MyCardsPage() {
                           cursor: isFree || isMarked ? 'default' : 'pointer',
                           transition: 'all 0.2s',
                           userSelect: 'none',
-                          animation: isInvalid ? 'shake 0.5s' : (isPendingAuto ? 'pulse-border 1s infinite' : 'none'),
+                          textShadow: isCenter ? '0 0 8px rgba(252, 191, 73, 0.8)' : 'none',
+                          animation: isCenter ? 'sponsorGlow 2s ease-in-out infinite' : (isInvalid ? 'shake 0.5s' : (isPendingAuto ? 'pulse-border 1s infinite' : 'none')),
                           position: 'relative'
                         }}
                       >

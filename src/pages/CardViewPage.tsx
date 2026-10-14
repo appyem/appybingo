@@ -452,6 +452,7 @@ export function CardViewPage() {
           {card.matrix.map((row, rowIndex) => 
             row.map((cell, colIndex) => {
               const isFree = cell === 'FREE';
+              const isCenter = rowIndex === 2 && colIndex === 2;
               const num = isFree ? null : (cell as number);
               const isMarked = isFree || (num !== null && markedNumbers.includes(num));
               const isPendingAuto = !isMarked && pendingAutoMark === num;
@@ -482,22 +483,23 @@ export function CardViewPage() {
                     background: isMarked 
                       ? 'var(--color-success)' 
                       : (isPendingAuto ? 'rgba(252, 191, 73, 0.2)' : 'var(--color-bg-elevated)'),
-                    color: isMarked ? 'white' : (isFree ? '#0A1628' : 'white'),
+                    color: isCenter ? '#FCBF49' : (isMarked ? 'white' : (isFree ? '#0A1628' : 'white')),
                     borderRadius: '8px',
-                    fontWeight: 800,
-                    fontSize: isFree ? '0.7rem' : '1.1rem',
+                    fontWeight: isCenter ? 900 : 800,
+                    fontSize: isCenter ? '0.65rem' : (isFree ? '0.7rem' : '1.1rem'),
+                    textShadow: isCenter ? '0 0 8px rgba(252, 191, 73, 0.8)' : 'none',
                     border: isInvalid ? '2px solid var(--color-error)' : (isPendingAuto ? '2px solid var(--color-warning)' : (isFree ? 'none' : '1px solid var(--color-border)')),
                     cursor: isFree || isMarked ? 'default' : 'pointer',
                     transition: 'all 0.2s',
                     userSelect: 'none',
-                    animation: isPendingAuto ? 'pulse-border 1s infinite' : (isInvalid ? 'shake 0.5s' : 'none'),
+                    animation: isCenter ? 'sponsorGlow 2s ease-in-out infinite' : (isPendingAuto ? 'pulse-border 1s infinite' : (isInvalid ? 'shake 0.5s' : 'none')),
                     position: 'relative',
                     minWidth: '0',
                     overflow: 'hidden',
                     boxSizing: 'border-box'
                   }}
                 >
-                  {isFree ? 'FREE' : cell}
+                  {isCenter ? (game?.sponsorName || 'AppyBingo') : (isFree ? 'FREE' : cell)}
                   {isMarked && !isFree && (
                     <div style={{ position: 'absolute', fontSize: '1.5rem', opacity: 0.8 }}>✓</div>
                   )}
@@ -857,6 +859,16 @@ export function CardViewPage() {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-5px); }
           75% { transform: translateX(5px); }
+        }
+        @keyframes sponsorGlow {
+          0%, 100% { 
+            text-shadow: 0 0 5px rgba(252, 191, 73, 0.5), 0 0 10px rgba(252, 191, 73, 0.3);
+            transform: scale(1);
+          }
+          50% { 
+            text-shadow: 0 0 15px rgba(252, 191, 73, 1), 0 0 25px rgba(252, 191, 73, 0.8);
+            transform: scale(1.05);
+          }
         }
       `}</style>
     </div>
