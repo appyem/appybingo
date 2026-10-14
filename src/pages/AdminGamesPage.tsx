@@ -246,6 +246,13 @@ export function AdminGamesPage() {
     }
   };
 
+    const handleCopyOrganizerLink = (gameId: string) => {
+    const url = `${window.location.origin}/#/organizador/${gameId}`;
+    navigator.clipboard.writeText(url).then(() => {
+      alert('Enlace del organizador copiado al portapapeles:\n' + url);
+    });
+  };
+
   const getAvailableStates = (currentState: GameState): GameState[] => {
     const transitions: Record<GameState, GameState[]> = {
       'DRAFT': ['OPEN', 'CANCELLED'],
@@ -548,24 +555,49 @@ export function AdminGamesPage() {
                             )}
                           </td>
                           <td style={{ padding: '1rem', textAlign: 'center' }}>
-                            <button
-                              onClick={() => handleShareGame(g.id, g.name)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'var(--color-primary)',
-                                cursor: 'pointer',
-                                padding: '0.5rem',
-                                borderRadius: 'var(--radius-md)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                margin: '0 auto'
-                              }}
-                              title="Compartir enlace de solicitud"
-                            >
-                              🔗
-                            </button>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
+                              <button
+                                onClick={() => handleShareGame(g.id, g.name)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: 'var(--color-primary)',
+                                  cursor: 'pointer',
+                                  padding: '0.5rem',
+                                  borderRadius: 'var(--radius-md)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 600
+                                }}
+                                title="Compartir enlace de solicitud para jugadores"
+                              >
+                                🔗 Jugador
+                              </button>
+                              <button
+                                onClick={() => handleCopyOrganizerLink(g.id)}
+                                style={{
+                                  background: 'rgba(255,255,255,0.05)',
+                                  border: '1px solid var(--color-border)',
+                                  color: 'var(--color-text-secondary)',
+                                  cursor: 'pointer',
+                                  padding: '0.5rem',
+                                  borderRadius: 'var(--radius-md)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 600,
+                                  transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'white'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
+                                title="Copiar enlace para que el organizador apruebe cartones"
+                              >
+                                👤 Organizador
+                              </button>
+                            </div>
                           </td>
                           <td style={{ padding: '1rem', textAlign: 'center' }}>
                             <button

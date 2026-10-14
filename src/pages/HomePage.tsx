@@ -236,6 +236,7 @@ export function HomePage() {
           prizeName: orgForm.prizeName.trim(),
           ...(orgForm.prizeDescription.trim() ? { prizeDescription: orgForm.prizeDescription.trim() } : {})
         } : {}),
+        ...(orgForm.scheduledDate ? { scheduledAt: new Date(orgForm.scheduledDate).getTime() } : {}),
         sponsorName: orgForm.sponsorName.trim() || 'AppyBingo'
       };
 
