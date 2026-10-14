@@ -3,6 +3,33 @@ import { Button } from '../components/ui/Button';
 import { gameRepository } from '../repositories';
 import type { Game } from '@bingo-types/index';
 
+// Hook personalizado para el contador regresivo
+const useCountdown = (targetDate: number | undefined) => {
+  const [timeLeft, setTimeLeft] = useState<string>('');
+  
+  useEffect(() => {
+    if (!targetDate) return;
+    
+    const updateCountdown = () => {
+      const diff = targetDate - Date.now();
+      if (diff <= 0) {
+        setTimeLeft('¡Iniciando!');
+      } else {
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+      }
+    };
+
+    updateCountdown(); // Ejecutar inmediatamente
+    const intervalId = setInterval(updateCountdown, 1000);
+    return () => clearInterval(intervalId);
+  }, [targetDate]);
+
+  return timeLeft;
+};
+
 // Componente de Bola 3D Realista
 const BingoBall3D = ({ number, color, size = 80, delay = 0, x, y }: { 
   number: number; 
@@ -829,8 +856,9 @@ export function HomePage() {
 }
 
 function GameCard({ game, isActive, formatCurrency }: { game: Game; isActive: boolean; formatCurrency: (v: number) => string }) {
+  const countdown = useCountdown(game.scheduledAt);
   
-    const handleShare = () => {
+  const handleShare = () => {
     const shareUrl = `${window.location.origin}/#/solicitar/${game.id}`;
     const message = `¡Juega AppyBingo: ${game.name}!\nSolicita tu cartón ahora. ¡Mucha suerte! 🍀\n${shareUrl}`;
     const encodedMessage = encodeURIComponent(message);
@@ -886,18 +914,33 @@ function GameCard({ game, isActive, formatCurrency }: { game: Game; isActive: bo
         {game.scheduledAt && !isActive && (
           <div style={{ 
             display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.5rem', 
+            flexDirection: 'column',
+            gap: '0.25rem',
             marginTop: '0.5rem', 
-            padding: '0.5rem 0.75rem', 
+            padding: '0.75rem', 
             background: 'rgba(252, 191, 73, 0.1)', 
             borderRadius: 'var(--radius-md)',
-            border: '1px solid rgba(252, 191, 73, 0.3)'
+            border: '1px solid rgba(252, 191, 73, 0.3)',
+            textAlign: 'center'
           }}>
-            <span style={{ fontSize: '1rem' }}>🕒</span>
-            <span style={{ fontSize: '0.875rem', color: '#FCBF49', fontWeight: 600 }}>
-              Programado: {new Date(game.scheduledAt).toLocaleString('es-CO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1rem' }}>🕒</span>
+              <span style={{ fontSize: '0.75rem', color: '#FCBF49', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Inicio Programado
+              </span>
+            </div>
+            <div style={{ 
+              fontSize: '1.5rem', 
+              fontWeight: 900, 
+              color: 'white', 
+              fontFamily: 'monospace',
+              textShadow: '0 0 10px rgba(252, 191, 73, 0.5)'
+            }}>
+              {countdown || 'Calculando...'}
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
+              {new Date(game.scheduledAt).toLocaleString('es-CO', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+            </div>
           </div>
         )}
       </div>
